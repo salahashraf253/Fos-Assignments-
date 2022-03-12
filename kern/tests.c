@@ -5,22 +5,22 @@
 
 void TestAssignment2()
 {
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q1:\n");
-	cprintf("========================\n");
-	TestAss2Q1();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q2:\n");
-	cprintf("========================\n");
-	TestAss2Q2();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q3:\n");
-	cprintf("========================\n");
-	TestAss2Q3();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q4:\n");
-	cprintf("========================\n");
-	TestAss2Q4();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q1:\n");
+//	cprintf("========================\n");
+//	TestAss2Q1();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q2:\n");
+//	cprintf("========================\n");
+//	TestAss2Q2();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q3:\n");
+//	cprintf("========================\n");
+//	TestAss2Q3();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q4:\n");
+//	cprintf("========================\n");
+//	TestAss2Q4();
 	cprintf("\n===========================\n");
 	cprintf("Automatic Testing of BONUS:\n");
 	cprintf("===========================\n");
@@ -236,6 +236,7 @@ int TestAss2Q3()
 	SwitchCourses(args) ;
 
 	int expectedArr1[] = {5, 6, 7, 8};
+	cprintf("Pointer 1 address : %x\n",ptr1);
 	if (!CheckArrays(expectedArr1, ptr1, 4))
 	{
 		cprintf("[EVAL] #1 SwitchCourses: Failed\n");
@@ -565,8 +566,14 @@ int TestAss2BONUS()
 int CheckArrays(int *expectedArr, int *actualArr, int N)
 {
 	int equal = 1 ;
+	cprintf("ActualArray : ");
+	for(int i=0;i<N;i++){
+		cprintf("%d , ",actualArr[i]);
+	}
+	cprintf("\n");
 	for(int i = 0; i < N; i++)
 	{
+		cprintf(" %d:%d \n",expectedArr[i],actualArr[i]);
 		if(expectedArr[i] != actualArr[i])
 			return 0;
 	}

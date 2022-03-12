@@ -95,6 +95,7 @@ struct Command commands[] =
 
 		//TODO: LAB2 Hands-on: add the commands here
 		{"print","fds",command_print_student_data},
+		{"print_index","fdf",command_print_with_index},
 
 		//LAB4: Hands-on
 		{ "sm", "Lab4.HandsOn: display the mapping info for the given virtual address", command_show_mapping},
@@ -416,7 +417,7 @@ int command_ft(int number_of_arguments, char **arguments)
 struct Students{
 	char name[20];
 	int gpa;
-	int courses[50];
+	int*address;
 	int courseCounter;
 };
 //========================================================
@@ -462,12 +463,14 @@ int* CreateAccount(int numOfArgs, char** arguments)
 	int*startVirtualAddress=coursePointer;
 	cprintf("Address : %x\n",startVirtualAddress);
 	if(index < MaxStudents){
-		//cprintf("Name : %s\n",arguments[1]);
+		stud[index].address=startVirtualAddress;
+
 		for(int i=0;i<strlen(arguments[1]);i++){
 			stud[index].name[i]=arguments[1][i];
 		}
 		//stud[index].name=arguments[1];
 		cprintf("Name : %s\n",stud[index].name);
+
 		stud[index].gpa=strtol(arguments[2],NULL,10);
 		stud[index].courseCounter=0;
 
@@ -477,7 +480,6 @@ int* CreateAccount(int numOfArgs, char** arguments)
 			*coursePointer=courseNumber;
 			coursePointer++;
 
-			stud[index].courses[stud[index].courseCounter]=courseNumber;
 			stud[index].courseCounter++;
 		}
 		index++;
@@ -540,13 +542,18 @@ void swap(int*x,int*y){
 	*y=temp;
 }
 int getIndexOfStudent(char *name){
-	for(int i=0;i<MaxStudents;i++){
+	for(int i=0;i<index;i++){
 		if(strcmp(stud[i].name,name)==0){
 			return i;
 		}
 	}
 	cprintf("this name (%s) is not Found\n",name);
 	return -1;
+}
+void swapAddr(int* a, int* b) {
+    int* temp = a;
+    a = b;
+    b = temp;
 }
 void SwitchCourses(char** arguments)
 {
@@ -558,10 +565,22 @@ void SwitchCourses(char** arguments)
 	int firstStudentIndex=getIndexOfStudent(firstName);
 	int secondStudentIndex=getIndexOfStudent(secondName);
 
+//	cprintf("Before swapping : %x and %x\n",stud[firstStudentIndex].address,stud[secondStudentIndex].address);
+//
+//	int *temp=stud[firstStudentIndex].address;
+//	stud[firstStudentIndex].address=stud[secondStudentIndex].address;
+//	stud[secondStudentIndex].address=temp;
+//
+//	//swapAddr(&stud[firstStudentIndex].address,stud[&secondStudentIndex].address);
+//	cprintf("After swapping : %x and %x\n",stud[firstStudentIndex].address,stud[secondStudentIndex].address);
+
+	int* address1=stud[firstStudentIndex].address;
+	int *address2=stud[secondStudentIndex].address;
 	for(int i=0;i<stud[firstStudentIndex].courseCounter;i++){
-		int temp=stud[firstStudentIndex].courses[i];
-		stud[firstStudentIndex].courses[i]=stud[secondStudentIndex].courses[i];
-		stud[secondStudentIndex].courses[i]=temp;
+		int temp=address1[i];
+		address1[i]=address2[i];
+		address2[i]=temp;
+//		address1++,address2++;
 	}
 }
 //========================================================
@@ -588,9 +607,11 @@ int IsEnrolled(char** arguments)
 	//...
 	int position=getIndexOfStudent((arguments[1]));
 	int courseNumber=strtol(arguments[2],NULL,10);
+	int *address=stud[position].address;
 	for(int i=0;i<stud[position].courseCounter;i++){
-		if(stud[position].courses[i] == courseNumber)
+		if(*address == courseNumber)
 			return 1;
+		address++;
 	}
 	return 0;
 }
@@ -611,21 +632,77 @@ int command_dnia(int number_of_arguments, char **arguments )
  * It should delete the previously created <account> from the memory.
  * This is done by moving down all allocated accounts that are located after the deleted one.
  */
+void copyNames(char *name1,char *name2,int size){
+	for(int i=0;i<size;i++){
+		name1[i]=name2[i];
+	}
+}
+//size =2
+//0 1 2
+//1 2
 void DeleteAccount(char** arguments)
 {
 	//Assignment2.BONUS
 	//put your logic here
 	//...
+	char *studentName=arguments[1];
+	int studentIndex=getIndexOfStudent(studentName);
 
+	for(int i=studentIndex;i<index-1;i++){
+		//1 2 3 4
+		stud[i]=stud[i+1];
+		//stud[i].address=stud[i+1].address;
+//		copyNames(stud[i].name,stud[i+1].name,strlen(stud[i+1].name));
+//
+//		//copy GPA
+//		stud[i].gpa=stud[i+1].gpa;
+//
+//		//copy Coureses
+//		int* address1=stud[i].address;
+//		int *address2=stud[i+1].address;
+//
+//		stud[i].courseCounter=stud[i+1].courseCounter;
+//		for(int j=0;i<stud[i+1].courseCounter;j++){
+//			stud[i].address[j]=stud[i+1].address[j];
+//		}
+	}
+	index--;
+	if(index==0){
+		coursePointer=(int*)0xF1000000;
+	}
 }
 
 //..............................................
+int command_print_with_index(int number_of_arguments, char **arguments){
+	int position=strtol(arguments[1],NULL,16);
+
+	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
+
+	int *address=stud[position].address;
+	cprintf("Courses Address is at %x\n",address);
+
+	cprintf("Courses %d : ",stud[position].courseCounter);
+
+	for(int i=0;i<stud[position].courseCounter;i++){
+		cprintf(" %d ",*address);
+		address++;
+	}
+	cprintf("\n");
+	return 0;
+}
 int command_print_student_data(int number_of_arguments, char **arguments){
 	int position = getIndexOfStudent(arguments[1]);
+	if(position==-1)return 0;
 	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
-	cprintf("Courses : ");
+
+	int *address=stud[position].address;
+	cprintf("Courses Address is at %x\n",address);
+
+	cprintf("Courses %d : ",stud[position].courseCounter);
+
 	for(int i=0;i<stud[position].courseCounter;i++){
-		cprintf(" %d ",stud[position].courses[i]);
+		cprintf(" %d ",*address);
+		address++;
 	}
 	cprintf("\n");
 	return 0;
