@@ -417,7 +417,7 @@ int command_ft(int number_of_arguments, char **arguments)
 struct Students{
 	char name[20];
 	int gpa;
-	int*address;
+	int*addressOfFirstCourse;
 	int courseCounter;
 };
 //========================================================
@@ -463,7 +463,7 @@ int* CreateAccount(int numOfArgs, char** arguments)
 	int*startVirtualAddress=coursePointer;
 	cprintf("Address : %x\n",startVirtualAddress);
 	if(index < MaxStudents){
-		stud[index].address=startVirtualAddress;
+		stud[index].addressOfFirstCourse=startVirtualAddress;
 
 		for(int i=0;i<strlen(arguments[1]);i++){
 			stud[index].name[i]=arguments[1][i];
@@ -574,8 +574,8 @@ void SwitchCourses(char** arguments)
 //	//swapAddr(&stud[firstStudentIndex].address,stud[&secondStudentIndex].address);
 //	cprintf("After swapping : %x and %x\n",stud[firstStudentIndex].address,stud[secondStudentIndex].address);
 
-	int* address1=stud[firstStudentIndex].address;
-	int *address2=stud[secondStudentIndex].address;
+	int* address1=stud[firstStudentIndex].addressOfFirstCourse;
+	int *address2=stud[secondStudentIndex].addressOfFirstCourse;
 	for(int i=0;i<stud[firstStudentIndex].courseCounter;i++){
 		int temp=address1[i];
 		address1[i]=address2[i];
@@ -607,7 +607,7 @@ int IsEnrolled(char** arguments)
 	//...
 	int position=getIndexOfStudent((arguments[1]));
 	int courseNumber=strtol(arguments[2],NULL,10);
-	int *address=stud[position].address;
+	int *address=stud[position].addressOfFirstCourse;
 	for(int i=0;i<stud[position].courseCounter;i++){
 		if(*address == courseNumber)
 			return 1;
@@ -645,31 +645,50 @@ void DeleteAccount(char** arguments)
 	//Assignment2.BONUS
 	//put your logic here
 	//...
+	if(index==1){
+		stud[0].courseCounter=0;
+		coursePointer=(int*)0xF1000000;
+		return;
+	}
+
 	char *studentName=arguments[1];
 	int studentIndex=getIndexOfStudent(studentName);
+	//stud[studentIndex].addressOfFirstCourse=stud[studentIndex+1].addressOfFirstCourse;
 
 	for(int i=studentIndex;i<index-1;i++){
-		//1 2 3 4
-		stud[i]=stud[i+1];
-		//stud[i].address=stud[i+1].address;
-//		copyNames(stud[i].name,stud[i+1].name,strlen(stud[i+1].name));
-//
-//		//copy GPA
-//		stud[i].gpa=stud[i+1].gpa;
-//
-//		//copy Coureses
+
+		int* address1=stud[i].addressOfFirstCourse;
+		int *address2=stud[i+1].addressOfFirstCourse;
+		for(int i=0;i<stud[i+1].courseCounter;i++){
+			int temp=address1[i];
+			address1[i]=address2[i];
+			address2[i]=temp;
+		}
+
+
+		copyNames(stud[i].name,stud[i+1].name,strlen(stud[i+1].name));
+
+		//copy GPA
+		stud[i].gpa=stud[i+1].gpa;
+
+
+		//copy Coureses
 //		int* address1=stud[i].address;
 //		int *address2=stud[i+1].address;
+
+//		int*tmp;
+//		tmp=stud[i].addressOfFirstCourse;
+//		stud[i].addressOfFirstCourse=stud[i+1].addressOfFirstCourse;
+//		stud[i+1].addressOfFirstCourse=tmp;
 //
 //		stud[i].courseCounter=stud[i+1].courseCounter;
-//		for(int j=0;i<stud[i+1].courseCounter;j++){
+
+		//for(int j=0;i<stud[i+1].courseCounter;j++){
 //			stud[i].address[j]=stud[i+1].address[j];
 //		}
 	}
 	index--;
-	if(index==0){
-		coursePointer=(int*)0xF1000000;
-	}
+
 }
 
 //..............................................
@@ -678,7 +697,7 @@ int command_print_with_index(int number_of_arguments, char **arguments){
 
 	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
 
-	int *address=stud[position].address;
+	int *address=stud[position].addressOfFirstCourse;
 	cprintf("Courses Address is at %x\n",address);
 
 	cprintf("Courses %d : ",stud[position].courseCounter);
@@ -687,7 +706,7 @@ int command_print_with_index(int number_of_arguments, char **arguments){
 		cprintf(" %d ",*address);
 		address++;
 	}
-	cprintf("\n");
+	cprintf("\n=================================================\n");
 	return 0;
 }
 int command_print_student_data(int number_of_arguments, char **arguments){
@@ -695,7 +714,7 @@ int command_print_student_data(int number_of_arguments, char **arguments){
 	if(position==-1)return 0;
 	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
 
-	int *address=stud[position].address;
+	int *address=stud[position].addressOfFirstCourse;
 	cprintf("Courses Address is at %x\n",address);
 
 	cprintf("Courses %d : ",stud[position].courseCounter);
@@ -704,6 +723,6 @@ int command_print_student_data(int number_of_arguments, char **arguments){
 		cprintf(" %d ",*address);
 		address++;
 	}
-	cprintf("\n");
+	cprintf("\n==============================================\n");
 	return 0;
 }
