@@ -5,8 +5,8 @@
 
 void TestAssignment2()
 {
-	cprintf("\n========================\n");
-//
+//	cprintf("\n========================\n");
+////
 //	cprintf("Automatic Testing of Q1:\n");
 //	cprintf("========================\n");
 //	TestAss2Q1();
