@@ -6,7 +6,7 @@
 void TestAssignment2()
 {
 //	cprintf("\n========================\n");
-////
+
 //	cprintf("Automatic Testing of Q1:\n");
 //	cprintf("========================\n");
 //	TestAss2Q1();
@@ -23,7 +23,7 @@ void TestAssignment2()
 //	cprintf("========================\n");
 //	TestAss2Q4();
 
-	cprintf("\n===========================\n");
+//	cprintf("\n===========================\n");
 	cprintf("Automatic Testing of BONUS:\n");
 	cprintf("===========================\n");
 	TestAss2BONUS();
@@ -238,7 +238,7 @@ int TestAss2Q3()
 	SwitchCourses(args) ;
 
 	int expectedArr1[] = {5, 6, 7, 8};
-	cprintf("Pointer 1 address : %x\n",ptr1);
+//	cprintf("Pointer 1 address : %x\n",ptr1);
 	if (!CheckArrays(expectedArr1, ptr1, 4))
 	{
 		cprintf("[EVAL] #1 SwitchCourses: Failed\n");
@@ -496,7 +496,7 @@ int TestAss2BONUS()
 	char dl2[100] = "dnia clara";
 	strsplit(dl2, WHITESPACE, args, &numOfArgs) ;
 	DeleteAccount(args);
-
+	//command_print_all_students();
 	//Access 1st element of 1st and 2nd arrays (it should retrieve the one of the 2nd and 3rd arrays)
 	if (ptr2[0] != 1 || ptr2[1] != 9 || ptr2[2] != 5 || ptr2[3] != 50)
 	{
@@ -535,7 +535,9 @@ int TestAss2BONUS()
 		return 1;
 	}
 	char f7[100] = "gnc Lina";
+
 	strsplit(f7, WHITESPACE, args, &numOfArgs) ;
+
 	ret = GetNumberOfCourses(args) ;
 	if (ret != 4)
 	{
@@ -568,14 +570,14 @@ int TestAss2BONUS()
 int CheckArrays(int *expectedArr, int *actualArr, int N)
 {
 	int equal = 1 ;
-	cprintf("ActualArray : ");
-	for(int i=0;i<N;i++){
-		cprintf("%d , ",actualArr[i]);
-	}
-	cprintf("\n");
+//	cprintf("ActualArray : ");
+//	for(int i=0;i<N;i++){
+//		cprintf("%d , ",actualArr[i]);
+//	}
+//	cprintf("\n");
 	for(int i = 0; i < N; i++)
 	{
-		cprintf(" %d:%d \n",expectedArr[i],actualArr[i]);
+		//cprintf(" %d:%d \n",expectedArr[i],actualArr[i]);
 		if(expectedArr[i] != actualArr[i])
 			return 0;
 	}

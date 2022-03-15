@@ -19,6 +19,7 @@ int command_add(int number_of_arguments, char **arguments);
 //....................................................................//
 int command_print_student_data(int number_of_arguments, char **arguments);
 int command_print_with_index(int number_of_arguments, char **arguments);
+int command_print_all_students();
 //.........................................................................//
 /*ASSIGNMENT2*/
 int* CreateAccount(int , char**);
