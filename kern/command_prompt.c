@@ -462,15 +462,16 @@ int *coursePointer=(int*)0xF1000000;	//this pointer that point to all courses of
 int getIndexOfStudent(char *name){
 	for(int i=0;i<studentArraySize;i++){
 		bool isMatching=1;
-		for(int ss=0;ss<stud[i].nameLength;ss++){
-			if(name[ss]!=stud[i].name[ss]){
+		for(int j=0;j<stud[i].nameLength;j++){
+			if(name[j]!=stud[i].name[j]){
 				isMatching=0;
 				break;
 			}
 		}
-		if(isMatching)return i;
+		if(isMatching)
+			return i;	//this is student index
 	}
-	return -1;
+	return -1;	//the student name is not found
 }
 
 int* CreateAccount(int numOfArgs, char** arguments)
@@ -531,7 +532,6 @@ int GetNumberOfCourses(char** arguments)
 	//...
 	int position=getIndexOfStudent(arguments[1]);
 	return stud[position].courseCounter;
-	return 0;
 }
 //========================================================
 
@@ -616,11 +616,6 @@ int command_dnia(int number_of_arguments, char **arguments )
  * It should delete the previously created <account> from the memory.
  * This is done by moving down all allocated accounts that are located after the deleted one.
  */
-void copyNames(char *name1,char *name2,int size){
-	for(int i=0;i<size;i++){
-		name1[i]=name2[i];
-	}
-}
 
 void DeleteAccount(char** arguments)
 {
@@ -632,7 +627,6 @@ void DeleteAccount(char** arguments)
 		coursePointer=(int*)0xF1000000;
 		return;
 	}
-
 	char *studentName=arguments[1];
 	int studentIndex=getIndexOfStudent(studentName);
 	for(int i=studentIndex;i<studentArraySize-1;i++){
@@ -640,7 +634,6 @@ void DeleteAccount(char** arguments)
 		//Copy courses
 		int* address1=stud[i].addressOfFirstCourse;
 		int *address2=stud[i+1].addressOfFirstCourse;
-
 		stud[i].courseCounter=stud[i+1].courseCounter;
 		for(int j=0;j<stud[i+1].courseCounter;j++){
 			int temp=address1[j];
@@ -654,7 +647,6 @@ void DeleteAccount(char** arguments)
 		}
 		//copy GPA
 		stud[i].gpa=stud[i+1].gpa;
-
 	}
 	studentArraySize--;
 }
