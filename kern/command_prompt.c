@@ -423,7 +423,7 @@ struct Students{
 	int nameLength;
 	int gpa;
 	int*addressOfFirstCourse;	// I store address of first course only then Iterate over it with courseCounter
-	int courseCounter;
+	int numberOfCourses;
 };
 //========================================================
 //Q1:Create Student Account [1.5 MARKS]
@@ -454,16 +454,17 @@ int command_csa(int number_of_arguments, char **arguments )
  */
 #define MaxStudents 30
 #define MaxCourses 50
-struct  Students stud[30];
+struct  Students studentArray[MaxStudents];
 
-int studentArraySize=0;
-int *coursePointer=(int*)0xF1000000;	//this pointer that point to all courses of all studenets
+int numberOfStudents=0;
+int *coursePointer=(int*)0xF1000000;	//this pointer that point to all courses of all students
 
 int getIndexOfStudent(char *name){
-	for(int i=0;i<studentArraySize;i++){
-		bool isMatching=1;
-		for(int j=0;j<stud[i].nameLength;j++){
-			if(name[j]!=stud[i].name[j]){
+	bool isMatching;
+	for(int i=0;i<numberOfStudents;i++){
+	    isMatching=1;
+		for(int j=0;j<studentArray[i].nameLength;j++){
+			if(name[j]!=studentArray[i].name[j]){
 				isMatching=0;
 				break;
 			}
@@ -480,18 +481,23 @@ int* CreateAccount(int numOfArgs, char** arguments)
 	//put your logic here
 	//...
 	int*startVirtualAddress=coursePointer;
-	if(studentArraySize < MaxStudents){
-		stud[studentArraySize].addressOfFirstCourse=startVirtualAddress;	//store first address of first course
-		stud[studentArraySize].nameLength=strlen(arguments[1]);	//store the name length
+	if(numberOfStudents < MaxStudents){
+		studentArray[numberOfStudents].addressOfFirstCourse=startVirtualAddress;	//store first address of first course
+		studentArray[numberOfStudents].nameLength=strlen(arguments[1]);	//store the name length
 
 		//store the name
-		for(int i=0;i<stud[studentArraySize].nameLength;i++){
-			stud[studentArraySize].name[i]=arguments[1][i];
+		for(int i=0;i<studentArray[numberOfStudents].nameLength;i++){
+			studentArray[numberOfStudents].name[i]=arguments[1][i];
 		}
 		//store the GPA
-		stud[studentArraySize].gpa=strtol(arguments[2],NULL,10);
+		studentArray[numberOfStudents].gpa=strtol(arguments[2],NULL,10);
 		//store the courses counter
-		stud[studentArraySize].courseCounter=numOfArgs-3;
+		int numOfCourses=numOfArgs-3;
+		if(numOfCourses > 50){
+			cprintf("Sorry, The maximum number of courses is 50\n");
+			return NULL;
+		}
+		studentArray[numberOfStudents].numberOfCourses=numOfCourses;
 
 		//store the courses
 		for(int i=3;i<numOfArgs;i++){
@@ -499,7 +505,7 @@ int* CreateAccount(int numOfArgs, char** arguments)
 			*coursePointer=courseNumber;
 			coursePointer++;
 		}
-		studentArraySize++;
+		numberOfStudents++;
 	}
 	else {
 		cprintf("Sorry, you have exceeded the Maximum limit of students\n");
@@ -531,7 +537,7 @@ int GetNumberOfCourses(char** arguments)
 	//put your logic here
 	//...
 	int position=getIndexOfStudent(arguments[1]);
-	return stud[position].courseCounter;
+	return studentArray[position].numberOfCourses;
 }
 //========================================================
 
@@ -556,15 +562,18 @@ void SwitchCourses(char** arguments)
 	//put your logic here
 	//...
 	char *firstName=arguments[1];
-	char *secondName = arguments[2];
 	int firstStudentIndex=getIndexOfStudent(firstName);
+	int* addressOfFirstStudentCourses=studentArray[firstStudentIndex].addressOfFirstCourse;
+
+	char *secondName = arguments[2];
 	int secondStudentIndex=getIndexOfStudent(secondName);
-	int* address1=stud[firstStudentIndex].addressOfFirstCourse;
-	int *address2=stud[secondStudentIndex].addressOfFirstCourse;
-	for(int i=0;i<stud[firstStudentIndex].courseCounter;i++){
-		int temp=address1[i];
-		address1[i]=address2[i];
-		address2[i]=temp;
+	int *addressOfSecondStudentCourses=studentArray[secondStudentIndex].addressOfFirstCourse;
+
+	int temp;
+	for(int i=0;i<studentArray[firstStudentIndex].numberOfCourses;i++){
+	    temp=addressOfFirstStudentCourses[i];
+		addressOfFirstStudentCourses[i]=addressOfSecondStudentCourses[i];
+		addressOfSecondStudentCourses[i]=temp;
 	}
 }
 //========================================================
@@ -584,20 +593,28 @@ int command_ie(int number_of_arguments, char **arguments )
  * arguments[1]: array name
  * arguments[2]: order type ("a": ascending,"d": descending)
  */
+bool isCourseEnrolled(int *addressOfCourses,int numberOfCourses,int courseNumberTarget){
+	for(int i=0;i<numberOfCourses;i++){
+		if(*addressOfCourses == courseNumberTarget)
+			return 1;
+		addressOfCourses++;
+	}
+	return 0;
+}
 int IsEnrolled(char** arguments)
 {
 	//Assignment2.Q4
 	//put your logic here
 	//...
-	int position=getIndexOfStudent((arguments[1]));
-	int courseNumber=strtol(arguments[2],NULL,10);
-	int *address=stud[position].addressOfFirstCourse;
-	for(int i=0;i<stud[position].courseCounter;i++){
-		if(*address == courseNumber)
-			return 1;
-		address++;
+	char *studentName=arguments[1];
+	int studentIndex=getIndexOfStudent(studentName);
+	int courseNumberTarget=strtol(arguments[2],NULL,10);
+	int *addressOfCourses=studentArray[studentIndex].addressOfFirstCourse;
+
+	if(isCourseEnrolled(addressOfCourses,studentArray[studentIndex].numberOfCourses,courseNumberTarget)){
+		return 1;
 	}
-	return 0;
+	else return 0;
 }
 //========================================================
 
@@ -622,33 +639,37 @@ void DeleteAccount(char** arguments)
 	//Assignment2.BONUS
 	//put your logic here
 	//...
-	if(studentArraySize==1){
-		stud[0].courseCounter=0;
+	if(numberOfStudents==1){
+		studentArray[0].numberOfCourses=0;
+		studentArray[0].nameLength=0;
 		coursePointer=(int*)0xF1000000;
+		numberOfStudents--;
 		return;
 	}
 	char *studentName=arguments[1];
 	int studentIndex=getIndexOfStudent(studentName);
-	for(int i=studentIndex;i<studentArraySize-1;i++){
+	int temp;
+	for(int i=studentIndex;i<numberOfStudents-1;i++){
 
 		//Copy courses
-		int* address1=stud[i].addressOfFirstCourse;
-		int *address2=stud[i+1].addressOfFirstCourse;
-		stud[i].courseCounter=stud[i+1].courseCounter;
-		for(int j=0;j<stud[i+1].courseCounter;j++){
-			int temp=address1[j];
-			address1[j]=address2[j];
-			address2[j]=temp;
+		int* addressOfFirstStudentCourses=studentArray[i].addressOfFirstCourse;
+		int* addressOfSecondStudentCourses=studentArray[i+1].addressOfFirstCourse;
+		studentArray[i].numberOfCourses=studentArray[i+1].numberOfCourses;
+
+		for(int j=0;j<studentArray[i+1].numberOfCourses;j++){
+		    temp=addressOfFirstStudentCourses[j];
+		    addressOfFirstStudentCourses[j]=addressOfSecondStudentCourses[j];
+			addressOfSecondStudentCourses[j]=temp;
 		}
 		//Copy Name
-		stud[i].nameLength=stud[i+1].nameLength;
-		for(int j=0;j<stud[i+1].nameLength;j++){
-			stud[i].name[j]=stud[i+1].name[j];
+		studentArray[i].nameLength=studentArray[i+1].nameLength;
+		for(int j=0;j<studentArray[i+1].nameLength;j++){
+			studentArray[i].name[j]=studentArray[i+1].name[j];
 		}
 		//copy GPA
-		stud[i].gpa=stud[i+1].gpa;
+		studentArray[i].gpa=studentArray[i+1].gpa;
 	}
-	studentArraySize--;
+	numberOfStudents--;
 }
 
 
@@ -656,14 +677,14 @@ void DeleteAccount(char** arguments)
 int command_print_with_index(int number_of_arguments, char **arguments){
 	int position=strtol(arguments[1],NULL,16);
 
-	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
+	cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
 
-	int *address=stud[position].addressOfFirstCourse;
+	int *address=studentArray[position].addressOfFirstCourse;
 	cprintf("Courses Address is at %x\n",address);
 
-	cprintf("Courses %d : ",stud[position].courseCounter);
+	cprintf("Courses %d : ",studentArray[position].numberOfCourses);
 
-	for(int i=0;i<stud[position].courseCounter;i++){
+	for(int i=0;i<studentArray[position].numberOfCourses;i++){
 		cprintf(" %d ",*address);
 		address++;
 	}
@@ -674,14 +695,14 @@ int command_print_student_data(int number_of_arguments, char **arguments){
 	cprintf("\n==============================================\n");
 	int position = getIndexOfStudent(arguments[1]);
 	if(position==-1)return 0;
-	cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
+	cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
 
-	int *address=stud[position].addressOfFirstCourse;
+	int *address=studentArray[position].addressOfFirstCourse;
 	cprintf("Courses Address is at %x\n",address);
 
-	cprintf("Courses %d : ",stud[position].courseCounter);
+	cprintf("Courses %d : ",studentArray[position].numberOfCourses);
 
-	for(int i=0;i<stud[position].courseCounter;i++){
+	for(int i=0;i<studentArray[position].numberOfCourses;i++){
 		cprintf(" %d ",*address);
 		address++;
 	}
@@ -689,19 +710,18 @@ int command_print_student_data(int number_of_arguments, char **arguments){
 	return 0;
 }
 int command_print_all_students(){
-	for(int ss=0;ss<studentArraySize;ss++){
+	for(int ss=0;ss<numberOfStudents;ss++){
 		cprintf("\n==============================================\n");
 		int position = ss;
-		if(position==-1)return 0;
 		cprintf("Index : %d\n",ss);
-		cprintf("Name : %s\nGpa: %d\n",stud[position].name,stud[position].gpa);
-		cprintf("Name Size : %d\n",strlen(stud[position].name));
-		int *address=stud[position].addressOfFirstCourse;
+		cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
+		cprintf("Name Size : %d\n",strlen(studentArray[position].name));
+		int *address=studentArray[position].addressOfFirstCourse;
 		cprintf("Courses Address is at %x\n",address);
 
-		cprintf("Courses %d : ",stud[position].courseCounter);
+		cprintf("Courses %d : ",studentArray[position].numberOfCourses);
 
-		for(int i=0;i<stud[position].courseCounter;i++){
+		for(int i=0;i<studentArray[position].numberOfCourses;i++){
 			cprintf(" %d ",*address);
 			address++;
 		}
