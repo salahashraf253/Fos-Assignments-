@@ -484,10 +484,10 @@ int* CreateAccount(int numOfArgs, char** arguments)
 	//put your logic here
 	//...
 	if(canCreateAccount()){
-		int*startVirtualAddress=coursePointer;
-
-		studentArray[numberOfStudents].addressOfFirstCourse=startVirtualAddress;	//store first address of first course
-		studentArray[numberOfStudents].nameLength=strlen(arguments[1]);	//store the name length
+		//store first address of first course
+		studentArray[numberOfStudents].addressOfFirstCourse=coursePointer;
+		//store the name length
+		studentArray[numberOfStudents].nameLength=strlen(arguments[1]);
 
 		//store the name
 		for(int i=0;i<studentArray[numberOfStudents].nameLength;i++){
@@ -509,8 +509,7 @@ int* CreateAccount(int numOfArgs, char** arguments)
 			*coursePointer=courseNumber;
 			coursePointer++;
 		}
-		numberOfStudents++;
-		return startVirtualAddress;
+		return studentArray[numberOfStudents++].addressOfFirstCourse;
 	}
 	else {
 		cprintf("Sorry, you have exceeded the Maximum limit of students\n");
