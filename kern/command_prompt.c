@@ -454,34 +454,38 @@ int command_csa(int number_of_arguments, char **arguments )
  */
 #define MaxStudents 30
 #define MaxCourses 50
-struct  Students studentArray[MaxStudents];
+struct  Students studentArray[MaxStudents+1];
 
-int numberOfStudents=0;
+int numberOfStudents=0; //this variable used to be index in studentArray , as index iterating over array
 int *coursePointer=(int*)0xF1000000;	//this pointer that point to all courses of all students
 
-int getIndexOfStudent(char *name){
+int getIndexOfStudent(char *studentName){
 	bool isMatching;
 	for(int i=0;i<numberOfStudents;i++){
 	    isMatching=1;
 		for(int j=0;j<studentArray[i].nameLength;j++){
-			if(name[j]!=studentArray[i].name[j]){
+			if(studentName[j]!=studentArray[i].name[j]){
 				isMatching=0;
 				break;
 			}
 		}
 		if(isMatching)
-			return i;	//this is student index
+			return i;	//this is student index in the array
 	}
 	return -1;	//the student name is not found
 }
 
+bool canCreateAccount(){
+	return numberOfStudents < MaxStudents;
+}
 int* CreateAccount(int numOfArgs, char** arguments)
 {
 	//TODO: Assignment2.Q1
 	//put your logic here
 	//...
-	int*startVirtualAddress=coursePointer;
-	if(numberOfStudents < MaxStudents){
+	if(canCreateAccount()){
+		int*startVirtualAddress=coursePointer;
+
 		studentArray[numberOfStudents].addressOfFirstCourse=startVirtualAddress;	//store first address of first course
 		studentArray[numberOfStudents].nameLength=strlen(arguments[1]);	//store the name length
 
@@ -506,12 +510,13 @@ int* CreateAccount(int numOfArgs, char** arguments)
 			coursePointer++;
 		}
 		numberOfStudents++;
+		return startVirtualAddress;
 	}
 	else {
 		cprintf("Sorry, you have exceeded the Maximum limit of students\n");
 		return NULL;
 	}
-	return startVirtualAddress;
+
 }
 //========================================================
 
@@ -536,8 +541,7 @@ int GetNumberOfCourses(char** arguments)
 	//TODO: Assignment2.Q2
 	//put your logic here
 	//...
-	int position=getIndexOfStudent(arguments[1]);
-	return studentArray[position].numberOfCourses;
+	return studentArray[getIndexOfStudent(arguments[1])].numberOfCourses;
 }
 //========================================================
 
@@ -571,6 +575,7 @@ void SwitchCourses(char** arguments)
 
 	int temp;
 	for(int i=0;i<studentArray[firstStudentIndex].numberOfCourses;i++){
+		//swap the courses
 	    temp=addressOfFirstStudentCourses[i];
 		addressOfFirstStudentCourses[i]=addressOfSecondStudentCourses[i];
 		addressOfSecondStudentCourses[i]=temp;
@@ -611,10 +616,7 @@ int IsEnrolled(char** arguments)
 	int courseNumberTarget=strtol(arguments[2],NULL,10);
 	int *addressOfCourses=studentArray[studentIndex].addressOfFirstCourse;
 
-	if(isCourseEnrolled(addressOfCourses,studentArray[studentIndex].numberOfCourses,courseNumberTarget)){
-		return 1;
-	}
-	else return 0;
+	return isCourseEnrolled(addressOfCourses,studentArray[studentIndex].numberOfCourses,courseNumberTarget);
 }
 //========================================================
 
@@ -634,6 +636,12 @@ int command_dnia(int number_of_arguments, char **arguments )
  * This is done by moving down all allocated accounts that are located after the deleted one.
  */
 
+void initializeStudent(int studentIndex){
+	studentArray[studentIndex].numberOfCourses=0;
+	studentArray[studentIndex].nameLength=0;
+	coursePointer=(int*)studentArray[studentIndex].addressOfFirstCourse;
+	numberOfStudents--;
+}
 void DeleteAccount(char** arguments)
 {
 	//Assignment2.BONUS
@@ -642,10 +650,7 @@ void DeleteAccount(char** arguments)
 
 	//handle deleting of first element
 	if(numberOfStudents==1){
-		studentArray[0].numberOfCourses=0;
-		studentArray[0].nameLength=0;
-		coursePointer=(int*)0xF1000000;
-		numberOfStudents--;
+		initializeStudent(0);
 		return;
 	}
 	char *studentName=arguments[1];
@@ -653,10 +658,7 @@ void DeleteAccount(char** arguments)
 
 	//handle deleting of last element
 	if(studentIndex==numberOfStudents-1){
-		studentArray[studentIndex].numberOfCourses=0;
-		studentArray[studentIndex].nameLength=0;
-		coursePointer=(int*)studentArray[studentIndex].addressOfFirstCourse;
-		numberOfStudents--;
+		initializeStudent(studentIndex);
 		return;
 	}
 

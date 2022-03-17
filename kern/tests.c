@@ -5,28 +5,28 @@
 
 void TestAssignment2()
 {
-	cprintf("\n========================\n");
+//	cprintf("\n========================\n");
 
-	cprintf("Automatic Testing of Q1:\n");
-	cprintf("========================\n");
-	TestAss2Q1();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q2:\n");
-	cprintf("========================\n");
-	TestAss2Q2();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q3:\n");
-	cprintf("========================\n");
-	TestAss2Q3();
+//	cprintf("Automatic Testing of Q1:\n");
+//	cprintf("========================\n");
+//	TestAss2Q1();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q2:\n");
+//	cprintf("========================\n");
+//	TestAss2Q2();
+//	cprintf("\n========================\n");
+//	cprintf("Automatic Testing of Q3:\n");
+//	cprintf("========================\n");
+//	TestAss2Q3();
 	cprintf("\n========================\n");
 	cprintf("Automatic Testing of Q4:\n");
 	cprintf("========================\n");
 	TestAss2Q4();
 
-	cprintf("\n===========================\n");
-	cprintf("Automatic Testing of BONUS:\n");
-	cprintf("===========================\n");
-	TestAss2BONUS();
+//	cprintf("\n===========================\n");
+//	cprintf("Automatic Testing of BONUS:\n");
+//	cprintf("===========================\n");
+//	TestAss2BONUS();
 }
 
 int TestAss2Q1()
