@@ -639,6 +639,8 @@ void DeleteAccount(char** arguments)
 	//Assignment2.BONUS
 	//put your logic here
 	//...
+
+	//handle deleting of first element
 	if(numberOfStudents==1){
 		studentArray[0].numberOfCourses=0;
 		studentArray[0].nameLength=0;
@@ -648,6 +650,17 @@ void DeleteAccount(char** arguments)
 	}
 	char *studentName=arguments[1];
 	int studentIndex=getIndexOfStudent(studentName);
+
+	//handle deleting of last element
+	if(studentIndex==numberOfStudents-1){
+		studentArray[studentIndex].numberOfCourses=0;
+		studentArray[studentIndex].nameLength=0;
+		coursePointer=(int*)studentArray[studentIndex].addressOfFirstCourse;
+		numberOfStudents--;
+		return;
+	}
+
+	//cprintf("Student Index : %d\nAddress : %x\n",studentIndex,studentArray[studentIndex].addressOfFirstCourse);
 	int temp;
 	for(int i=studentIndex;i<numberOfStudents-1;i++){
 
@@ -657,9 +670,7 @@ void DeleteAccount(char** arguments)
 		studentArray[i].numberOfCourses=studentArray[i+1].numberOfCourses;
 
 		for(int j=0;j<studentArray[i+1].numberOfCourses;j++){
-		    temp=addressOfFirstStudentCourses[j];
 		    addressOfFirstStudentCourses[j]=addressOfSecondStudentCourses[j];
-			addressOfSecondStudentCourses[j]=temp;
 		}
 		//Copy Name
 		studentArray[i].nameLength=studentArray[i+1].nameLength;
