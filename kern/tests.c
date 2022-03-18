@@ -27,6 +27,7 @@ void TestAssignment2()
 	cprintf("Automatic Testing of BONUS:\n");
 	cprintf("===========================\n");
 	TestAss2BONUS();
+
 }
 
 int TestAss2Q1()
