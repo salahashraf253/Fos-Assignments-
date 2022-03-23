@@ -662,7 +662,6 @@ void DeleteAccount(char** arguments)
 	}
 
 	//cprintf("Student Index : %d\nAddress : %x\n",studentIndex,studentArray[studentIndex].addressOfFirstCourse);
-	int temp;
 	for(int i=studentIndex;i<numberOfStudents-1;i++){
 
 		//Copy courses
