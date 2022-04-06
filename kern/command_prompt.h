@@ -16,24 +16,19 @@ int command_kernel_info(int , char **);
 int command_ver(int number_of_arguments, char **arguments);
 int command_add(int number_of_arguments, char **arguments);
 
-//....................................................................//
-int command_print_student_data(int number_of_arguments, char **arguments);
-int command_print_with_index(int number_of_arguments, char **arguments);
-int command_print_all_students();
-//.........................................................................//
-/*ASSIGNMENT2*/
-int* CreateAccount(int , char**);
-int GetNumberOfCourses(char**);
-void SwitchCourses(char**);
-int IsEnrolled(char**);
+/*ASSIGNMENT3*/
+int FindPhysicalAddress(char** arguments);
+void ShareRangeWithPermissions(char** arguments);
+int FindVirtualOfFrameNum(char** arguments);
+uint32 ConnectPageToFrame(char** arguments);
 
-int command_csa(int , char**);
+int command_fpa(int , char **);
+int command_srp(int , char **);
+int command_fv(int , char **);
+int command_cpf(int , char **);
 
-int command_gnc(int , char**);
-int command_scs(int , char**);
-int command_ie(int , char**);
+int command_cvp(int , char **);
+int command_dvp(int , char **);
 
-/*ASSIGNMENT2 - BONUS*/
-void DeleteAccount(char** arguments);
-int command_dnia(int , char **);
+
 #endif	// !FOS_KERN_MONITOR_H

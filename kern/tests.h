@@ -12,12 +12,13 @@
 #include <inc/assert.h>
 #include <inc/x86.h>
 
-void TestAssignment2();
-int TestAss2Q1();
-int TestAss2Q2();
-int TestAss2Q3();
-int TestAss2Q4();
-int TestAss2BONUS();
-int CheckArrays(int *expectedArr, int *actualArr, int N);
-
+void TestAssignment3();
+int TestAss3Q1();
+int TestAss3Q2();
+int TestAss3Q3();
+int TestAss3Q4();
+int TestAss3QB();
+int CB(uint32 va, int bitIndex);
+void ClearUserSpace();
+int CheckFrameNumbersInRange(uint32 ptr1, uint32 ptr2, uint32 size);
 #endif /* !FOS_KERN_TESTS_H */
