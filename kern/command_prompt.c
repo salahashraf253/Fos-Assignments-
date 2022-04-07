@@ -444,6 +444,9 @@ int command_dvp(int number_of_arguments, char **arguments)
 /*ASSIGNMENT-3 [MAIN QUESTIONS] */
 //========================================================
 
+
+
+
 //Q1:Find EXACT Physical Address
 //=========================================
 /*DON'T change this function*/
@@ -465,6 +468,17 @@ int command_fpa(int number_of_arguments, char **arguments )
  * 	If the page exists, return the EXACT physical address (i.e. including the offset).
  * 	Else, return -1
  */
+int getDirectoryIndex(uint32 virtualAddress){
+	return PDX(virtualAddress);
+}
+int getPageTableIndex(uint32 virtualAddress){
+	return PTX(virtualAddress);
+}
+uint32* getPageTableVA(const void *virtual_address, int write){
+	uint32* pageTableVirtualAddress=NULL;
+	get_page_table(ptr_page_directory, virtual_address,write,&pageTableVirtualAddress);
+	return pageTableVirtualAddress;
+}
 //fpa 0xF0001000
 int FindPhysicalAddress(char** arguments)
 {
@@ -473,16 +487,14 @@ int FindPhysicalAddress(char** arguments)
 	//...
 
 	int virtualAddress=strtol(arguments[1],NULL,16);
-	uint32 *ptr=NULL;
-	get_page_table(ptr_page_directory,(void*)virtualAddress,0,&ptr);
-	int indexOfPageTable= PTX(virtualAddress);
-	if(ptr!=NULL){
-		int address=virtualAddress;
-		if((ptr[indexOfPageTable] & PERM_PRESENT)>0){
-			return (ptr[PTX(virtualAddress)]>>12)*PAGE_SIZE + (address&(0xFFF));
+	uint32 *pageTableVirtualAddress=getPageTableVA((void *)virtualAddress,0);
+	int indexOfPageTable = getPageTableIndex(virtualAddress);
+
+	if(pageTableVirtualAddress!=NULL){
+		if((pageTableVirtualAddress[indexOfPageTable] & PERM_PRESENT)>0){
+			return (pageTableVirtualAddress[indexOfPageTable]>>12)*PAGE_SIZE + (virtualAddress&(0xFFF));
 		}
 	}
-
 	return -1;
 }
 //========================================================
@@ -505,11 +517,51 @@ int command_srp(int number_of_arguments, char **arguments )
  * arguments[3]: size of the sharing range (in MB)
  * arguments[4]: <r/w>: 'r' for read-only permission, 'w' for read/write permission
  */
+
+//command : srp F0000000 40000000 256 w
+void setPremission(uint32 * pageTable,char premission,int pageTableIndex){
+	if(premission =='w'){
+		pageTable[pageTableIndex] |= PERM_WRITEABLE;
+	}
+	else
+		pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
+}
 void ShareRangeWithPermissions(char** arguments)
 {
-	//TODO: Assignment3.Q2
-	//put your logic here
-	//...
+	uint32 virutalAddress1=strtol(arguments[1],NULL,16);
+	uint32 virutalAddress2=strtol(arguments[2],NULL,16);
+	int size=strtol(arguments[3],NULL,10);
+	char premission=arguments[4][0];
+
+	int toShare =(size*1024)/4 + (size%4==0?0:1);
+//	int mod=size%4;
+//	if(mod!=0)
+//		toShare++;
+	uint32 * pageTable1Va=getPageTableVA((void*)virutalAddress1,0);
+	uint32 * pageTable2Va=getPageTableVA((void*)virutalAddress2,1);
+
+	if(pageTable1Va==NULL||pageTable2Va==NULL)
+		return ;
+
+	int index1=getPageTableIndex(virutalAddress1);
+	int index2=getPageTableIndex(virutalAddress2);
+
+	int tmpVar1=virutalAddress1;
+	int tmpVar2=virutalAddress2;
+
+	uint32 * pageTable1;
+	uint32 * pageTable2;
+	for(int i=0;i<toShare;i++){
+		get_page_table(ptr_page_directory,(int*)tmpVar1,0,&pageTable1);
+		get_page_table(ptr_page_directory,(int*)tmpVar2,1,&pageTable2);
+
+		pageTable2[PTX(tmpVar2)]=pageTable1[PTX(tmpVar1)];
+
+		setPremission(pageTable2,premission,PTX(tmpVar2));
+
+		tmpVar1+=PAGE_SIZE;
+		tmpVar2+=PAGE_SIZE;
+	}
 
 }
 //========================================================
