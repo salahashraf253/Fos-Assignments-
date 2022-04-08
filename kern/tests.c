@@ -29,7 +29,7 @@ int TestAss3Q1()
 	int kilo = 1024 ;
 	int mega = 1024*1024 ;
 
-	
+
 	char cmd1[100] = "fpa 0xF0001000";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
@@ -63,7 +63,7 @@ int TestAss3Q1()
 	}
 
 
-	
+
 	char cmd4[100] = "fpa 0xF0000005";
 	strsplit(cmd4, WHITESPACE, args, &numOfArgs) ;
 
@@ -97,7 +97,7 @@ int TestAss3Q1()
 		return 0;
 	}
 
-	
+
 	char acmd2[100] = "dvp 0xF0F00000";
 	execute_command(acmd2);
 
@@ -120,7 +120,7 @@ int TestAss3Q2()
 {
 	char *ptr1, *ptr2, *ptr3;
 
-	
+
 	char cmd1[100] = "srp F0000000 40000000 256 w";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
@@ -159,11 +159,11 @@ int TestAss3Q2()
 	if ((*ptr1) != 'C' || (*ptr2) != 'C')
 	{
 		cprintf("[EVAL] #2 ShareRangeWithPermissions: Failed.\n");
-		
+
 		return 0;
 	}
 
-	
+
 	char cmd2[100] = "srp F0000000 80000000 128 r";
 	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
 
@@ -217,7 +217,7 @@ int TestAss3Q3()
 		return 0;
 	}
 
-	
+
 	char acmd1[100] = "cvp 0x00004000 0x1000";
 	execute_command(acmd1);
 
@@ -247,9 +247,11 @@ int TestAss3Q3()
 	char cmd4[100] = "fv 100";
 	strsplit(cmd4, WHITESPACE, args, &numOfArgs) ;
 
+
 	va = FindVirtualOfFrameNum(args) ;
 	if (va  != -1)
 	{
+		cprintf("Wrong address is %x\n",va);
 		cprintf("[EVAL] #4 FindVirtualOfFrameNum: Failed. \n");
 		return 0;
 	}
@@ -261,7 +263,7 @@ int TestAss3Q3()
 
 int TestAss3QB()
 {
-	//[1] Connect with write and user permissions 
+	//[1] Connect with write and user permissions
 	char cmd1[100] = "cpf 0 768 w u";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
@@ -295,7 +297,7 @@ int TestAss3QB()
 	}
 
 
-	
+
 	char cmd2[100] = "cpf 981000 768 w s";
 	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
 

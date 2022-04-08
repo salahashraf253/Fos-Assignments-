@@ -479,23 +479,27 @@ uint32* getPageTableVA(const void *virtual_address, int write){
 	get_page_table(ptr_page_directory, virtual_address,write,&pageTableVirtualAddress);
 	return pageTableVirtualAddress;
 }
-//fpa 0xF0001000
+int getPhysicalAddress(int virtualAddress){
+	int offset=virtualAddress&(0xFFF);
+	uint32 *PageTableVA=getPageTableVA((void *)virtualAddress,0);
+	int pageTableIndex = getPageTableIndex(virtualAddress);
+	if(PageTableVA!=NULL){
+		if((PageTableVA[pageTableIndex] & PERM_PRESENT)>0)
+		{
+			int phyicalAddress=(PageTableVA[pageTableIndex]>>12)*PAGE_SIZE +offset;
+			cprintf("Phyiscal Address of %x is %x\n",virtualAddress,phyicalAddress);
+			return phyicalAddress;
+		}
+	}
+	return -1;
+}
 int FindPhysicalAddress(char** arguments)
 {
 	//TODO: Assignment3.Q1
 	//put your logic here
 	//...
-
 	int virtualAddress=strtol(arguments[1],NULL,16);
-	uint32 *pageTableVirtualAddress=getPageTableVA((void *)virtualAddress,0);
-	int indexOfPageTable = getPageTableIndex(virtualAddress);
-
-	if(pageTableVirtualAddress!=NULL){
-		if((pageTableVirtualAddress[indexOfPageTable] & PERM_PRESENT)>0){
-			return (pageTableVirtualAddress[indexOfPageTable]>>12)*PAGE_SIZE + (virtualAddress&(0xFFF));
-		}
-	}
-	return -1;
+	return getPhysicalAddress(virtualAddress);
 }
 //========================================================
 
@@ -518,13 +522,19 @@ int command_srp(int number_of_arguments, char **arguments )
  * arguments[4]: <r/w>: 'r' for read-only permission, 'w' for read/write permission
  */
 
-//command : srp F0000000 40000000 256 w
-void setPremission(uint32 * pageTable,char premission,int pageTableIndex){
+void setWritePremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] |= PERM_WRITEABLE;
+}
+void setReadPremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
+}
+void setPremission(char premission,uint32 * pageTable,int pageTableIndex){
 	if(premission =='w'){
-		pageTable[pageTableIndex] |= PERM_WRITEABLE;
+		setWritePremission(pageTable,pageTableIndex);
 	}
-	else
-		pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
+	else{
+		setReadPremission(pageTable,pageTableIndex);
+	}
 }
 void ShareRangeWithPermissions(char** arguments)
 {
@@ -534,17 +544,12 @@ void ShareRangeWithPermissions(char** arguments)
 	char premission=arguments[4][0];
 
 	int toShare =(size*1024)/4 + (size%4==0?0:1);
-//	int mod=size%4;
-//	if(mod!=0)
-//		toShare++;
+
 	uint32 * pageTable1Va=getPageTableVA((void*)virutalAddress1,0);
 	uint32 * pageTable2Va=getPageTableVA((void*)virutalAddress2,1);
 
 	if(pageTable1Va==NULL||pageTable2Va==NULL)
 		return ;
-
-	int index1=getPageTableIndex(virutalAddress1);
-	int index2=getPageTableIndex(virutalAddress2);
 
 	int tmpVar1=virutalAddress1;
 	int tmpVar2=virutalAddress2;
@@ -555,9 +560,9 @@ void ShareRangeWithPermissions(char** arguments)
 		get_page_table(ptr_page_directory,(int*)tmpVar1,0,&pageTable1);
 		get_page_table(ptr_page_directory,(int*)tmpVar2,1,&pageTable2);
 
-		pageTable2[PTX(tmpVar2)]=pageTable1[PTX(tmpVar1)];
+		pageTable2[getPageTableIndex(tmpVar2)]=pageTable1[getPageTableIndex(tmpVar1)];
 
-		setPremission(pageTable2,premission,PTX(tmpVar2));
+		setPremission(premission,pageTable2,getPageTableIndex(tmpVar2));
 
 		tmpVar1+=PAGE_SIZE;
 		tmpVar2+=PAGE_SIZE;
@@ -574,14 +579,14 @@ int command_fv(int number_of_arguments, char **arguments )
 {
 	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE FindVirtualOfFrameNum() FUNCTION
 	int ret = FindVirtualOfFrameNum(arguments) ;
-	if (ret == -1)
-	{
-		cprintf("not exists!\n");
-	}
-	else
-	{
-		cprintf("va of the first page that's connected frame #%s = %x\n", arguments[1], ret);
-	}
+//	if (ret == -1)
+//	{
+//		cprintf("not exists!\n");
+//	}
+//	else
+//	{
+//		cprintf("va of the first page that's connected frame #%s = %x\n", arguments[1], ret);
+//	}
 	return 0;
 }
 /*---------------------------------------------------------*/
@@ -592,13 +597,38 @@ int command_fv(int number_of_arguments, char **arguments )
  * 	If there's one or more pages connected to the given frame number, return the virtual address of the FIRST one.
  * 	Else, return -1.
  */
+//fv <frame number>
+int getpageFrameNumber(uint32 virutalAddress ){
+	uint32* pageTableVA=NULL;
+	get_page_table(ptr_page_directory,(int*)virutalAddress,0,&pageTableVA);
+	if(pageTableVA!=NULL){
+		uint32 pageEntry=pageTableVA[PTX(virutalAddress)];
+		if((pageEntry & PERM_PRESENT)){
+			int pageFrameNumber=pageEntry>>12;
+			return pageFrameNumber;
+		}
+	}
+	return -1;
+}
 int FindVirtualOfFrameNum(char** arguments)
 {
 	//TODO: Assignment3.Q3
-	//put your logic here
-	//...
-
-	return -1 ;
+	uint32 virutalAddress=0;
+	int pageFrameNumber=strtol(arguments[1],NULL,10);
+//	int offset=pageFrameNumber<<20;
+//	cprintf("Offset : %d\n",offset);
+//	int frameNo=pageFrameNumber>>12;
+//	cprintf("# frame: %d\n",frameNo);
+	uint32 address=0;
+	for(int i=0;i<4*1024*1024;i++){
+		if(getpageFrameNumber(address)==pageFrameNumber){
+			cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
+			return (int)address;
+		}
+		address+=PAGE_SIZE;
+	}
+	cprintf("frame: %d is not Found\n",pageFrameNumber);
+	return -1;
 }
 //========================================================
 
