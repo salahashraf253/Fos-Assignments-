@@ -443,9 +443,56 @@ int command_dvp(int number_of_arguments, char **arguments)
 //========================================================
 /*ASSIGNMENT-3 [MAIN QUESTIONS] */
 //========================================================
-
-
-
+//...................................................
+//=========================================Helpers Function to me=========================================
+void setWritePremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] |= PERM_WRITEABLE;
+}
+void setReadPremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
+}
+void setPremission(char premission,uint32 * pageTable,int pageTableIndex){
+	if(premission =='w'){
+		setWritePremission(pageTable,pageTableIndex);
+	}
+	else{
+		setReadPremission(pageTable,pageTableIndex);
+	}
+}
+int getDirectoryIndex(uint32 virtualAddress){
+	return PDX(virtualAddress);
+}
+int getPageTableIndex(uint32 virtualAddress){
+	return PTX(virtualAddress);
+}
+uint32* getPageTableVA(const void *virtual_address, int write){
+	uint32* pageTableVirtualAddress=NULL;
+	get_page_table(ptr_page_directory, virtual_address,write,&pageTableVirtualAddress);
+	return pageTableVirtualAddress;
+}
+int getpageFrameNumber(uint32 virutalAddress ){
+	uint32* pageTableVA=getPageTableVA((void*)virutalAddress,0);
+	if(pageTableVA!=NULL){
+		uint32 pageEntry=pageTableVA[getPageTableIndex(virutalAddress)];
+		if((pageEntry & PERM_PRESENT)){
+			int pageFrameNumber=pageEntry>>12;
+			return pageFrameNumber;
+		}
+	}
+	return -1;
+}
+int getPhysicalAddress(int virtualAddress){
+	int pageFrameNumber=getpageFrameNumber(virtualAddress);
+	if(pageFrameNumber!=-1){
+		int offset=virtualAddress&(0xFFF);
+		return pageFrameNumber*PAGE_SIZE+offset;
+	}
+	return -1;
+}
+bool isTrueVA(uint32 address,int pageFrameNumber){
+	return getpageFrameNumber(address)==pageFrameNumber;
+}
+//=========================================End of helper Functions=========================================
 
 //Q1:Find EXACT Physical Address
 //=========================================
@@ -468,36 +515,10 @@ int command_fpa(int number_of_arguments, char **arguments )
  * 	If the page exists, return the EXACT physical address (i.e. including the offset).
  * 	Else, return -1
  */
-int getDirectoryIndex(uint32 virtualAddress){
-	return PDX(virtualAddress);
-}
-int getPageTableIndex(uint32 virtualAddress){
-	return PTX(virtualAddress);
-}
-uint32* getPageTableVA(const void *virtual_address, int write){
-	uint32* pageTableVirtualAddress=NULL;
-	get_page_table(ptr_page_directory, virtual_address,write,&pageTableVirtualAddress);
-	return pageTableVirtualAddress;
-}
-int getPhysicalAddress(int virtualAddress){
-	int offset=virtualAddress&(0xFFF);
-	uint32 *PageTableVA=getPageTableVA((void *)virtualAddress,0);
-	int pageTableIndex = getPageTableIndex(virtualAddress);
-	if(PageTableVA!=NULL){
-		if((PageTableVA[pageTableIndex] & PERM_PRESENT)>0)
-		{
-			int phyicalAddress=(PageTableVA[pageTableIndex]>>12)*PAGE_SIZE +offset;
-			cprintf("Phyiscal Address of %x is %x\n",virtualAddress,phyicalAddress);
-			return phyicalAddress;
-		}
-	}
-	return -1;
-}
 int FindPhysicalAddress(char** arguments)
 {
 	//TODO: Assignment3.Q1
 	//put your logic here
-	//...
 	int virtualAddress=strtol(arguments[1],NULL,16);
 	return getPhysicalAddress(virtualAddress);
 }
@@ -521,53 +542,26 @@ int command_srp(int number_of_arguments, char **arguments )
  * arguments[3]: size of the sharing range (in MB)
  * arguments[4]: <r/w>: 'r' for read-only permission, 'w' for read/write permission
  */
-
-void setWritePremission(uint32 * pageTable, int pageTableIndex){
-	pageTable[pageTableIndex] |= PERM_WRITEABLE;
-}
-void setReadPremission(uint32 * pageTable, int pageTableIndex){
-	pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
-}
-void setPremission(char premission,uint32 * pageTable,int pageTableIndex){
-	if(premission =='w'){
-		setWritePremission(pageTable,pageTableIndex);
-	}
-	else{
-		setReadPremission(pageTable,pageTableIndex);
-	}
-}
 void ShareRangeWithPermissions(char** arguments)
 {
-	uint32 virutalAddress1=strtol(arguments[1],NULL,16);
-	uint32 virutalAddress2=strtol(arguments[2],NULL,16);
+	uint32 VA1=strtol(arguments[1],NULL,16);
+	uint32 VA2=strtol(arguments[2],NULL,16);
 	int size=strtol(arguments[3],NULL,10);
 	char premission=arguments[4][0];
+	int pagesRange =(size*1024)/4 + ( size%4==0 ? 0:1 );
+	uint32 * pageTable1Va=getPageTableVA((void*)VA1,0);
+	uint32 * pageTable2Va=getPageTableVA((void*)VA2,1);
 
-	int toShare =(size*1024)/4 + (size%4==0?0:1);
-
-	uint32 * pageTable1Va=getPageTableVA((void*)virutalAddress1,0);
-	uint32 * pageTable2Va=getPageTableVA((void*)virutalAddress2,1);
-
-	if(pageTable1Va==NULL||pageTable2Va==NULL)
-		return ;
-
-	int tmpVar1=virutalAddress1;
-	int tmpVar2=virutalAddress2;
-
-	uint32 * pageTable1;
-	uint32 * pageTable2;
-	for(int i=0;i<toShare;i++){
-		get_page_table(ptr_page_directory,(int*)tmpVar1,0,&pageTable1);
-		get_page_table(ptr_page_directory,(int*)tmpVar2,1,&pageTable2);
-
-		pageTable2[getPageTableIndex(tmpVar2)]=pageTable1[getPageTableIndex(tmpVar1)];
-
-		setPremission(premission,pageTable2,getPageTableIndex(tmpVar2));
-
-		tmpVar1+=PAGE_SIZE;
-		tmpVar2+=PAGE_SIZE;
+	if(pageTable1Va!=NULL && pageTable2Va !=NULL){
+		uint32 * pageTable1;
+		uint32 * pageTable2;
+		for ( int i=0 ; i<pagesRange ; i++ , VA1+=PAGE_SIZE , VA2+=PAGE_SIZE ){
+			pageTable1=getPageTableVA((void*)VA1,0);
+			pageTable2=getPageTableVA((void*)VA2,1);
+			pageTable2[getPageTableIndex(VA2)]=pageTable1[getPageTableIndex(VA1)];
+			setPremission(premission,pageTable2,getPageTableIndex(VA2));
+		}
 	}
-
 }
 //========================================================
 
@@ -579,14 +573,14 @@ int command_fv(int number_of_arguments, char **arguments )
 {
 	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE FindVirtualOfFrameNum() FUNCTION
 	int ret = FindVirtualOfFrameNum(arguments) ;
-//	if (ret == -1)
-//	{
-//		cprintf("not exists!\n");
-//	}
-//	else
-//	{
-//		cprintf("va of the first page that's connected frame #%s = %x\n", arguments[1], ret);
-//	}
+	if (ret == -1)
+	{
+		cprintf("not exists!\n");
+	}
+	else
+	{
+		cprintf("va of the first page that's connected frame #%s = %x\n", arguments[1], ret);
+	}
 	return 0;
 }
 /*---------------------------------------------------------*/
@@ -597,39 +591,23 @@ int command_fv(int number_of_arguments, char **arguments )
  * 	If there's one or more pages connected to the given frame number, return the virtual address of the FIRST one.
  * 	Else, return -1.
  */
-//fv <frame number>
-int getpageFrameNumber(uint32 virutalAddress ){
-	uint32* pageTableVA=NULL;
-	get_page_table(ptr_page_directory,(int*)virutalAddress,0,&pageTableVA);
-	if(pageTableVA!=NULL){
-		uint32 pageEntry=pageTableVA[PTX(virutalAddress)];
-		if((pageEntry & PERM_PRESENT)){
-			int pageFrameNumber=pageEntry>>12;
-			return pageFrameNumber;
-		}
-	}
-	return -1;
-}
+
 int FindVirtualOfFrameNum(char** arguments)
 {
 	//TODO: Assignment3.Q3
-	uint32 virutalAddress=0;
 	int pageFrameNumber=strtol(arguments[1],NULL,10);
-//	int offset=pageFrameNumber<<20;
-//	cprintf("Offset : %d\n",offset);
-//	int frameNo=pageFrameNumber>>12;
-//	cprintf("# frame: %d\n",frameNo);
-	uint32 address=0;
-	for(int i=0;i<4*1024*1024;i++){
-		if(getpageFrameNumber(address)==pageFrameNumber){
-			cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
-			return (int)address;
+	int address=0;
+	const int maxSize=4*1024*1024;
+	for(int i=0;i<maxSize; i++, address+=4096){
+		if(isTrueVA(address,pageFrameNumber)){
+			//cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
+			return address;
 		}
-		address+=PAGE_SIZE;
 	}
-	cprintf("frame: %d is not Found\n",pageFrameNumber);
+	//cprintf("frame: %d is not Found\n",pageFrameNumber);
 	return -1;
 }
+
 //========================================================
 
 
