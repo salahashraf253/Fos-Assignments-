@@ -444,7 +444,11 @@ int command_dvp(int number_of_arguments, char **arguments)
 /*ASSIGNMENT-3 [MAIN QUESTIONS] */
 //========================================================
 //...................................................
+
 //=========================================Helpers Function to me=========================================
+bool isPresentPageTable(uint32 * pageTableVa){
+	return pageTableVa !=NULL;
+}
 void setWritePremission(uint32 * pageTable, int pageTableIndex){
 	pageTable[pageTableIndex] |= PERM_WRITEABLE;
 }
@@ -472,7 +476,7 @@ uint32* getPageTableVA(const void *virtual_address, int write){
 }
 int getpageFrameNumber(uint32 virutalAddress ){
 	uint32* pageTableVA=getPageTableVA((void*)virutalAddress,0);
-	if(pageTableVA!=NULL){
+	if(isPresentPageTable(pageTableVA)){
 		uint32 pageEntry=pageTableVA[getPageTableIndex(virutalAddress)];
 		if((pageEntry & PERM_PRESENT)){
 			int pageFrameNumber=pageEntry>>12;
@@ -522,6 +526,7 @@ int FindPhysicalAddress(char** arguments)
 	int virtualAddress=strtol(arguments[1],NULL,16);
 	return getPhysicalAddress(virtualAddress);
 }
+
 //========================================================
 
 //Q2:Share Range with Permissions
@@ -552,17 +557,20 @@ void ShareRangeWithPermissions(char** arguments)
 	uint32 * pageTable1Va=getPageTableVA((void*)VA1,0);
 	uint32 * pageTable2Va=getPageTableVA((void*)VA2,1);
 
-	if(pageTable1Va!=NULL && pageTable2Va !=NULL){
+	if(isPresentPageTable(pageTable1Va) && isPresentPageTable(pageTable2Va)){
 		uint32 * pageTable1;
 		uint32 * pageTable2;
-		for ( int i=0 ; i<pagesRange ; i++ , VA1+=PAGE_SIZE , VA2+=PAGE_SIZE ){
+		while(pagesRange--){
 			pageTable1=getPageTableVA((void*)VA1,0);
 			pageTable2=getPageTableVA((void*)VA2,1);
 			pageTable2[getPageTableIndex(VA2)]=pageTable1[getPageTableIndex(VA1)];
 			setPremission(premission,pageTable2,getPageTableIndex(VA2));
+			VA1+=PAGE_SIZE ;
+			VA2+=PAGE_SIZE;
 		}
 	}
 }
+
 //========================================================
 
 //Q3: Find virtual address of the given frame number
@@ -592,21 +600,25 @@ int command_fv(int number_of_arguments, char **arguments )
  * 	Else, return -1.
  */
 
+const int maxSize=4*1024*1024;
 int FindVirtualOfFrameNum(char** arguments)
 {
 	//TODO: Assignment3.Q3
 	int pageFrameNumber=strtol(arguments[1],NULL,10);
-	int address=0;
-	const int maxSize=4*1024*1024;
-	for(int i=0;i<maxSize; i++, address+=4096){
-		if(isTrueVA(address,pageFrameNumber)){
+	int virutalAddress=0;
+	int itrations=maxSize;
+	while(itrations--){
+		if(isTrueVA(virutalAddress,pageFrameNumber)){
 			//cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
-			return address;
+			return virutalAddress;
 		}
+		else virutalAddress+=4096;
 	}
 	//cprintf("frame: %d is not Found\n",pageFrameNumber);
 	return -1;
 }
+
+
 
 //========================================================
 
