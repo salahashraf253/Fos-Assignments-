@@ -1,587 +1,417 @@
 #include <kern/tests.h>
+#include <kern/memory_manager.h>
 
 //define the white-space symbols
 #define WHITESPACE "\t\r\n "
 
-void TestAssignment2()
+void TestAssignment3()
 {
 	cprintf("\n========================\n");
-
 	cprintf("Automatic Testing of Q1:\n");
 	cprintf("========================\n");
-	TestAss2Q1();
+	TestAss3Q1();
 	cprintf("\n========================\n");
 	cprintf("Automatic Testing of Q2:\n");
 	cprintf("========================\n");
-	TestAss2Q2();
+	TestAss3Q2();
 	cprintf("\n========================\n");
 	cprintf("Automatic Testing of Q3:\n");
 	cprintf("========================\n");
-	TestAss2Q3();
-	cprintf("\n========================\n");
-	cprintf("Automatic Testing of Q4:\n");
-	cprintf("========================\n");
-	TestAss2Q4();
-
+//	TestAss3Q3();
 	cprintf("\n===========================\n");
 	cprintf("Automatic Testing of BONUS:\n");
 	cprintf("===========================\n");
-	TestAss2BONUS();
-
+	TestAss3QB();
 }
 
-int TestAss2Q1()
+int TestAss3Q1()
 {
-	int retValue = 1;
-	int i = 0;
-	//Create first account
-	char cr1[100] = "csa Ali 2 1 2 3";
+	int kilo = 1024 ;
+	int mega = 1024*1024 ;
+
+
+	char cmd1[100] = "fpa 0xF0001000";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
-	strsplit(cr1, WHITESPACE, args, &numOfArgs) ;
+	strsplit(cmd1, WHITESPACE, args, &numOfArgs) ;
 
-	int* ptr1 = CreateAccount(numOfArgs, args) ;
-	assert(ptr1 == (int*)0xF1000000);
-
-	//Check elements of 1st array
-	int expectedArr1[] = {1, 2, 3};
-	if (!CheckArrays(expectedArr1, ptr1, 3))
+	int pa = FindPhysicalAddress(args) ;
+	if (pa != 0x1000)
 	{
-		cprintf("[EVAL] #1 CreateAccount: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #1 FindPhysicalAddress Failed.\n");
+		return 0;
 	}
 
-	//Create second account
-	char cr2[100] = "csa Mona 1 4 5 7 8";
-	numOfArgs = 0;
-	strsplit(cr2, WHITESPACE, args, &numOfArgs) ;
+	char cmd2[100] = "fpa 0xF0100000";
+	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
 
-	int* ptr2 = CreateAccount(numOfArgs,args) ;
-	assert(ptr2 == (int*)0xF100000C);
-
-	//Check elements of 2nd account
-	int expectedArr2[] = {4, 5, 7, 8};
-	if (!CheckArrays(expectedArr2, ptr2, 4))
+	pa = FindPhysicalAddress(args) ;
+	if (pa != 0x100000)
 	{
-		cprintf("[EVAL] #2 CreateAccount: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #2 FindPhysicalAddress Failed.\n");
+		return 0;
 	}
 
-	//Check elements of 1st account
-	if (!CheckArrays(expectedArr1, ptr1, 3))
+	char cmd3[100] = "fpa 0x100";
+	strsplit(cmd3, WHITESPACE, args, &numOfArgs) ;
+
+	pa = FindPhysicalAddress(args) ;
+	if (pa != -1)
 	{
-		cprintf("[EVAL] #3 CreateAccount: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #3 FindPhysicalAddress Failed.\n");
+		return 0;
 	}
 
-	//Create third account
-	char cr3[100] = "csa Lara 4 8 9";
-	numOfArgs = 0;
-	strsplit(cr3, WHITESPACE, args, &numOfArgs) ;
 
-	int* ptr3 = CreateAccount(numOfArgs,args) ;
-	assert(ptr3 == (int*)0xF100001C);
 
-	//Check elements of 3rd account
-	int expectedArr3[] = {8, 9};
-	if (!CheckArrays(expectedArr3, ptr3, 2))
+	char cmd4[100] = "fpa 0xF0000005";
+	strsplit(cmd4, WHITESPACE, args, &numOfArgs) ;
+
+	 pa = FindPhysicalAddress(args) ;
+	if (pa != 5)
 	{
-		cprintf("[EVAL] #4 CreateAccount: Failed\n");
-		return retValue;
-	}
-	//Check elements of 2nd account
-	if (!CheckArrays(expectedArr2, ptr2, 4))
-	{
-		cprintf("[EVAL] #5 CreateAccount: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #4 FindPhysicalAddress Failed.\n");
+		return 0;
 	}
 
-	//Check elements of 1st array
-	if (!CheckArrays(expectedArr1, ptr1, 3))
+	char cmd5[100] = "fpa 0xF0100555";
+	strsplit(cmd5, WHITESPACE, args, &numOfArgs) ;
+
+	pa = FindPhysicalAddress(args) ;
+	if (pa != 0x100555)
 	{
-		cprintf("[EVAL] #6 CreateAccount: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #5 FindPhysicalAddress Failed. \n");
+		return 0;
 	}
 
-	cprintf("[EVAL] CreateAccount: Succeeded\n");
+	char acmd1[100] = "cvp 0x0 0x100000";
+	execute_command(acmd1);
 
-	return retValue;
+	char cmd6[100] = "fpa 0x100";
+	strsplit(cmd6, WHITESPACE, args, &numOfArgs) ;
+
+	pa = FindPhysicalAddress(args) ;
+	if (pa != 0x100100)
+	{
+		cprintf("[EVAL] #6 FindPhysicalAddress Failed.\n");
+		return 0;
+	}
+
+
+	char acmd2[100] = "dvp 0xF0F00000";
+	execute_command(acmd2);
+
+	char cmd7[100] = "fpa 0xF0F00F00";
+	strsplit(cmd7, WHITESPACE, args, &numOfArgs) ;
+
+	pa = FindPhysicalAddress(args) ;
+	if (pa != -1)
+	{
+		cprintf("[EVAL] #7 FindPhysicalAddress Failed. \n");
+		return 0;
+	}
+
+	cprintf("[EVAL] Q1 Automatic Test: Succeeded. \n");
+
+	return 0;
 }
 
-int TestAss2Q2()
+int TestAss3Q2()
 {
-	//Create first array
-	char cr1[100] = "csa Ahmed 2 10 20 30 40";
+	char *ptr1, *ptr2, *ptr3;
+
+
+	char cmd1[100] = "srp F0000000 40000000 256 w";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
-	strsplit(cr1, WHITESPACE, args, &numOfArgs) ;
+	strsplit(cmd1, WHITESPACE, args, &numOfArgs) ;
 
-	CreateAccount(numOfArgs, args) ;
-
-	//Create second array
-	char cr2[100] = "csa Alaa 4 1 3 2 5 6";
-	strsplit(cr2, WHITESPACE, args, &numOfArgs) ;
-
-	CreateAccount(numOfArgs, args) ;
-
-	//Get (Exist)
-	char f1[100] = "gnc Ahmed";
-	strsplit(f1, WHITESPACE, args, &numOfArgs) ;
-	int ret = GetNumberOfCourses(args) ;
-	if (ret != 4)
+	ShareRangeWithPermissions(args) ;
+	ptr1 = (char*)0xF0000000; *ptr1 = 'A' ;
+	ptr2 = (char*)0x40000000;
+	if (CB(0x40000000,0) <= 0)
 	{
-		cprintf("[EVAL] #1 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] Test Failed #1. \n");
+		return 0;
 	}
 
-	//Get (Exist)
-	char f2[100] = "gnc Alaa";
-	strsplit(f2, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 5)
+	if(CheckFrameNumbersInRange(0xF0000000, 0x40000000, 256) < 0)
 	{
-		cprintf("[EVAL] #2 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] Test Failed #1. \n");
+		return 0;
 	}
 
-	//Create third array
-	char cr3[100] = "csa Omar 1 4 5 6";
-	strsplit(cr3, WHITESPACE, args, &numOfArgs) ;
-
-	CreateAccount(numOfArgs, args) ;
-
-	//Get (Exist)
-	char f3[100] = "gnc Omar";
-	strsplit(f3, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 3)
+	if ((*ptr1) != 'A' || (*ptr2) != 'A')
 	{
-		cprintf("[EVAL] #3 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] #1 ShareRangeWithPermissions: Failed.\n");
+		return 0;
 	}
 
-	//Get from the three arrays
-	char f4[100] = "gnc Ahmed";
-	strsplit(f4, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 4)
+	if (CB(0x41000000,0) <= 0 || CB(0x41000000,1) <= 0)
 	{
-		cprintf("[EVAL] #4 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] Test Failed #2. \n");
+		return 0;
 	}
 
-	char f5[100] = "gnc Alaa";
-	strsplit(f5, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 5)
+	ptr1 = (char*)0x41000000; *ptr1 = 'C' ;
+	ptr2 = (char*)0xF1000000;
+
+	if ((*ptr1) != 'C' || (*ptr2) != 'C')
 	{
-		cprintf("[EVAL] #5 GetNumberOfCourses: Failed\n");
-		return 1;
-	}
-	char f6[100] = "gnc Omar";
-	strsplit(f6, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 3)
-	{
-		cprintf("[EVAL] #6 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] #2 ShareRangeWithPermissions: Failed.\n");
+
+		return 0;
 	}
 
-	//check un-existing account
-	char f7[100] = "gnc Hala";
-	strsplit(f7, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 0)
+
+	char cmd2[100] = "srp F0000000 80000000 128 r";
+	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
+
+	ShareRangeWithPermissions(args) ;
+	ptr1 = (char*)0xF0000000;
+	ptr2 = (char*)0x81000000;
+
+	if (CB(0x81000000,0) <= 0)
 	{
-		cprintf("[EVAL] #7 GetNumberOfCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] Test Failed #3. \n");
+		return 0;
 	}
 
-	cprintf("[EVAL] GetNumberOfCourses: Succeeded\n");
+	if(CheckFrameNumbersInRange(0xF0000000, 0x80000000, 128) < 0)
+	{
+		cprintf("[EVAL] Test Failed #3. \n");
+		return 0;
+	}
 
-	return 1;
+	if ((*ptr1) != 'A' || (*ptr2) != 'C')
+	{
+		cprintf("[EVAL] #3 ShareRangeWithPermissions: Failed. \n");
+		return 0;
+	}
+
+	if (CB(0x81800000, 1) != 0 || CB(0x81000000, 1) != 0)
+	{
+		cprintf("[EVAL] #4 ShareRangeWithPermissions: Failed. \n");
+		return 0;
+	}
+
+	cprintf("[EVAL] Q2 Automatic Test: Succeeded. \n");
+	return 0;
 }
 
-int TestAss2Q3()
+int TestAss3Q3()
 {
-	int retValue = 1;
-	int i = 0;
-	//Create first account
-	char cr1[100] = "csa Ola 2 1 2 3 4";
+	int kilo = 1024 ;
+	int mega = 1024*1024 ;
+	ClearUserSpace();
+
+	char cmd1[100] = "fv 1";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
-	strsplit(cr1, WHITESPACE, args, &numOfArgs) ;
+	strsplit(cmd1, WHITESPACE, args, &numOfArgs) ;
 
-	int* ptr1 = CreateAccount(numOfArgs,args) ;
-	assert(ptr1 >= (int*)0xF1000000);
-
-	//Create second account
-	char cr2[100] = "csa Amged 1 5 6 7 8";
-	numOfArgs = 0;
-	strsplit(cr2, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr2 = CreateAccount(numOfArgs,args) ;
-	assert(ptr2 >= (int*)0xF1000000);
-
-	//Create third account
-	char cr3[100] = "csa Nora 2 9 10 11 12";
-	numOfArgs = 0;
-	strsplit(cr3, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr3 = CreateAccount(numOfArgs,args) ;
-	assert(ptr3 >= (int*)0xF1000000);
-
-	//Switch: Test1
-	char cr4[100] = "scs Ola Amged";
-	numOfArgs = 0;
-	strsplit(cr4, WHITESPACE, args, &numOfArgs) ;
-
-	SwitchCourses(args) ;
-
-	int expectedArr1[] = {5, 6, 7, 8};
-//	cprintf("Pointer 1 address : %x\n",ptr1);
-	if (!CheckArrays(expectedArr1, ptr1, 4))
+	int va = FindVirtualOfFrameNum(args) ;
+	if (va  != 0xF0001000)
 	{
-		cprintf("[EVAL] #1 SwitchCourses: Failed\n");
-		return 1;
-	}
-
-	int expectedArr1_1[] = {1, 2, 3, 4};
-	if (!CheckArrays(expectedArr1_1, ptr2, 4))
-	{
-		cprintf("[EVAL] #2 SwitchCourses: Failed\n");
-		return 1;
-	}
-
-	//Switch: Test2
-	char cr5[100] = "scs Amged Nora";
-	numOfArgs = 0;
-	strsplit(cr5, WHITESPACE, args, &numOfArgs) ;
-
-	SwitchCourses(args) ;
-
-	int expectedArr2[] = {9, 10, 11, 12};
-	if (!CheckArrays(expectedArr2, ptr2, 4))
-	{
-		cprintf("[EVAL] #3 SwitchCourses: Failed\n");
-		return 1;
-	}
-
-	int expectedArr2_1[] = {1, 2, 3, 4};
-	if (!CheckArrays(expectedArr2_1, ptr3, 4))
-	{
-		cprintf("[EVAL] #4 SwitchCourses: Failed\n");
-		return 1;
-	}
-
-	//Switch: Test3
-	char cr6[100] = "scs Ola Nora";
-	numOfArgs = 0;
-	strsplit(cr6, WHITESPACE, args, &numOfArgs) ;
-
-	SwitchCourses(args) ;
-
-	int expectedArr3[] = {5, 6, 7, 8};
-	if (!CheckArrays(expectedArr3, ptr3, 4))
-	{
-		cprintf("[EVAL] #5 SwitchCourses: Failed\n");
-		return 1;
-	}
-
-	int expectedArr3_1[] = {1, 2, 3, 4};
-	if (!CheckArrays(expectedArr3_1, ptr1, 4))
-	{
-		cprintf("[EVAL] #6 SwitchCourses: Failed\n");
-		return 1;
+		cprintf("[EVAL] #1 FindVirtualOfFrameNum: Failed. \n");
+		return 0;
 	}
 
 
-	cprintf("[EVAL] SwitchCourses: Succeeded\n");
+	char acmd1[100] = "cvp 0x00004000 0x1000";
+	execute_command(acmd1);
 
-	return retValue;}
+	char cmd2[100] = "fv 1";
+	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
 
-int TestAss2Q4()
+	va = FindVirtualOfFrameNum(args) ;
+	if (va  != 0x00004000)
+	{
+		cprintf("[EVAL] #2 FindVirtualOfFrameNum: Failed. \n");
+		return 0;
+	}
+
+	char cmd3[100] = "fv 100";
+	strsplit(cmd3, WHITESPACE, args, &numOfArgs) ;
+
+	va = FindVirtualOfFrameNum(args) ;
+	if (va  != 0xF0064000)
+	{
+		cprintf("[EVAL] #3 FindVirtualOfFrameNum: Failed. \n");
+		return 0;
+	}
+
+	char acmd2[100] = "dvp 0xF0064000";
+	execute_command(acmd2);
+
+	char cmd4[100] = "fv 100";
+	strsplit(cmd4, WHITESPACE, args, &numOfArgs) ;
+
+
+	va = FindVirtualOfFrameNum(args) ;
+	if (va  != -1)
+	{
+		cprintf("Wrong address is %x\n",va);
+		cprintf("[EVAL] #4 FindVirtualOfFrameNum: Failed. \n");
+		return 0;
+	}
+
+	cprintf("[EVAL] Q3 Automatic Test: Succeeded.\n");
+
+	return 0;
+}
+
+int TestAss3QB()
 {
-	int retValue = 1;
-	int i = 0;
-	//Create first account
+	//[1] Connect with write and user permissions
+	char cmd1[100] = "cpf 0 768 w u";
 	int numOfArgs = 0;
 	char *args[MAX_ARGUMENTS] ;
-	char cr1[100] = "csa Mariam 3 2 5 6";
-	strsplit(cr1, WHITESPACE, args, &numOfArgs) ;
-	int* ptr1 = CreateAccount(numOfArgs, args) ;
-	assert(ptr1 >= (int*)0xF1000000);
+	strsplit(cmd1, WHITESPACE, args, &numOfArgs) ;
 
-	//check the course
-	char ie1[100] = "ie Mariam 2";
-	strsplit(ie1, WHITESPACE, args, &numOfArgs) ;
+	int ref1 = frames_info[768].references;
+	uint32 entry = ConnectPageToFrame(args) ;
+	char *ptr1, *ptr2, *ptr3;
 
-	int is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 1)
+	if (CB(0,0) <= 0)
 	{
-		cprintf("[EVAL] #1 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] Test Failed #1. \n");
+		return 0;
 	}
 
-	char ie2[100] = "ie Mariam 1";
-	strsplit(ie2, WHITESPACE, args, &numOfArgs) ;
+	ptr1 = (char*)0x0; *ptr1 = 'A' ;
+	int ref2 = frames_info[768].references;
 
-	is_enrolled = IsEnrolled(args);
-	if (is_enrolled != 0)
+	if ((ref2 - ref1) != 0)
 	{
-		cprintf("[EVAL] #2 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #1 ConnectPageToFrame: Failed. You should manually implement the connection logic using paging data structures ONLY. [DON'T update the references]. \n");
+		return 0;
 	}
 
-	//Create second account
-	char cr2[100] = "csa Farah 4 1 3 2 ";
-	numOfArgs = 0;
-	strsplit(cr2, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr2 = CreateAccount(numOfArgs, args) ;
-	assert(ptr2 >= (int*)0xF1000000);
-
-	//check the course
-	char ie3[100] = "ie Farah 4";
-	strsplit(ie3, WHITESPACE, args, &numOfArgs) ;
-
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 0)
+	uint32 f = entry & 0xFFFFF000 ;
+	uint32 p = entry & 0x00000FFF ;
+	if (*ptr1 != 'A' || (f != 0x00300000) || (p != 0xE07))
 	{
-		cprintf("[EVAL] #3 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #2 ConnectPageToFrame: Failed. \n");
+		return 0;
 	}
 
-	char ie4[100] = "ie Farah 3";
-	strsplit(ie4, WHITESPACE, args, &numOfArgs) ;
 
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 1)
+
+	char cmd2[100] = "cpf 981000 768 w s";
+	strsplit(cmd2, WHITESPACE, args, &numOfArgs) ;
+
+	ref1 = frames_info[768].references;
+	entry = ConnectPageToFrame(args) ;
+
+	if (CB(0xEF808000,0) <= 0 || CB(0xEF808000,1) <= 0)
 	{
-		cprintf("[EVAL] #4 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] Test Failed #2. \n");
+		return 0;
 	}
 
-	//Create third account
-	char cr3[100] = "csa Farag 4 9 10";
-	numOfArgs = 0;
-	strsplit(cr3, WHITESPACE, args, &numOfArgs) ;
+	ptr2 = (char*)0xEF808000;
+	ref2 = frames_info[768].references;
 
-	int* ptr3 = CreateAccount(numOfArgs, args) ;
-	assert(ptr3 >= (int*)0xF1000000);
-
-	//check the course
-	char ie5[100] = "ie Farag 10";
-	strsplit(ie5, WHITESPACE, args, &numOfArgs) ;
-
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 1)
+	if ((ref2 - ref1) != 0)
 	{
-		cprintf("[EVAL] #5 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #3 ConnectPageToFrame: Failed. You should manually implement the connection logic using paging data structures ONLY. [DON'T update the references].\n");
+		return 0;
 	}
 
-	//check the course
-	char ie6[100] = "ie Farag 1";
-	strsplit(ie6, WHITESPACE, args, &numOfArgs) ;
-
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 0)
+	f = entry & 0xFFFFF000 ;
+	p = entry & 0x00000FFF ;
+	if (*ptr1 != 'A' || *ptr2 != 'A' || (f != 0x00300000) || (p != 0xE03))
 	{
-		cprintf("[EVAL] #6 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #4 ConnectPageToFrame: Failed. \n");
+		return 0;
 	}
 
-	//check the course
-	char ie7[100] = "ie Farag 9";
-	strsplit(ie7, WHITESPACE, args, &numOfArgs) ;
+	*ptr2 = 'B';
 
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 1)
+
+	//[3] Connect with read and user permissions
+	char cmd3[100] = "cpf 4 768 r u";
+	strsplit(cmd3, WHITESPACE, args, &numOfArgs) ;
+
+	ref1 = frames_info[768].references;
+	entry = ConnectPageToFrame(args) ;
+
+	if (CB(0x00004000,0) <= 0 )
 	{
-		cprintf("[EVAL] #7 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] Test Failed #3. \n");
+		return 0;
 	}
 
-	//check un-existing account
-	char ie8[100] = "ie Mona 9";
-	strsplit(ie8, WHITESPACE, args, &numOfArgs) ;
+	ptr3 = (char*)0x00004000;
+	ref2 = frames_info[768].references;
 
-	is_enrolled = IsEnrolled(args) ;
-	if (is_enrolled != 0)
+	if ((ref2 - ref1) != 0)
 	{
-		cprintf("[EVAL] #8 IsEnrolled: Failed\n");
-		return retValue;
+		cprintf("[EVAL] #5 ConnectPageToFrame: Failed. You should manually implement the connection logic using paging data structures ONLY. [DON'T update the references]. \n");
+		return 0;
 	}
 
-	cprintf("[EVAL] IsEnrolled: Succeeded\n");
-	return 1;
+	f = entry & 0xFFFFF000 ;
+	p = entry & 0x00000FFF ;
+	if (*ptr1 != 'B' || *ptr2 != 'B' || *ptr3 != 'B' || (f != 0x00300000) || (p != 0xE05))
+	{
+		cprintf("[EVAL] #6 ConnectPageToFrame: Failed. \n");
+		return 0;
+	}
+
+	cprintf("[EVAL] BONUS Automatic Test: Succeeded. \n");
+
+	return 0;
 }
 
-int TestAss2BONUS()
+int CB(uint32 va, int bn)
 {
-	int retValue = 1;
-	int i = 0;
-	/*CASE1: Create 1 array then delete it*/
-	//Create first array
-	char cr1[100] = "csa ali 4 1 2 3";
-	int numOfArgs = 0;
-	char *args[MAX_ARGUMENTS] ;
-	strsplit(cr1, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr1 = CreateAccount(numOfArgs, args) ;
-	assert(ptr1 >= (int*)0xF1000000);
-
-	//Delete it
-	char dl1[100] = "dnia ali";
-	strsplit(dl1, WHITESPACE, args, &numOfArgs) ;
-	DeleteAccount(args);
-
-	//Create another array (should overwrite the 1st one!)
-	char cr2[100] = "csa clara 3 60 61 62 63";
-	strsplit(cr2, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr2 = CreateAccount(numOfArgs, args) ;
-
-	//Access 1st element of 1st array (it should retrieve the one of the 2nd array)
-	if (ptr1[0] != 60 || ptr1 != ptr2 )
-	{
-		cprintf("[EVAL] #1 DeleteAccount: Failed\n");
-		return retValue;
-	}
-
-	//Get element from 1st array and from 2nd array
-	char f1[100] = "gnc ali";
-	strsplit(f1, WHITESPACE, args, &numOfArgs) ;
-	int ret = GetNumberOfCourses(args) ;
-	if (ret != 0)
-	{
-		cprintf("[EVAL] #2 DeleteAccount: Failed\n");
-		return 1;
-	}
-	char f2[100] = "ie clara 62";
-	strsplit(f2, WHITESPACE, args, &numOfArgs) ;
-	ret = IsEnrolled(args);
-	if (ret != 1)
-	{
-		cprintf("[EVAL] #3 DeleteAccount: Failed\n");
-		return 1;
-	}
-
-	char f3[100] = "gnc clara";
-	strsplit(f3, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 4)
-	{
-		cprintf("[EVAL] #4 DeleteAccount: Failed\n");
-		return 1;
-	}
-
-
-	/*CASE2: Create three arrays then delete one of them*/
-	//Create second array
-	char cr3[100] = "csa Lina 3 1 9 5 50";
-	numOfArgs = 0;
-	strsplit(cr3, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr3 = CreateAccount(numOfArgs, args) ;
-
-	//Create third array
-	char cr4[100] = "csa Ramy 7 10 2 3 4 5 6 7";
-	numOfArgs = 0;
-	strsplit(cr4, WHITESPACE, args, &numOfArgs) ;
-
-	int* ptr4 = CreateAccount(numOfArgs, args) ;
-
-	//Delete the 1st array
-	char dl2[100] = "dnia clara";
-	strsplit(dl2, WHITESPACE, args, &numOfArgs) ;
-	DeleteAccount(args);
-	//command_print_all_students();
-	//Access 1st element of 1st and 2nd arrays (it should retrieve the one of the 2nd and 3rd arrays)
-	if (ptr2[0] != 1 || ptr2[1] != 9 || ptr2[2] != 5 || ptr2[3] != 50)
-	{
-		cprintf("[EVAL] #5 DeleteAccount: Failed\n");
-		return retValue;
-	}
-	if(ptr3[0] != 10 || ptr3[1] != 2 || ptr3[2] != 3 || ptr3[3] != 4 || ptr3[4] != 5 || ptr3[5] != 6 || ptr3[6] != 7)
-	{
-		cprintf("[EVAL] #6 DeleteAccount: Failed\n");
-		return retValue;
-	}
-
-	//Get element from 1st (deleted), 2nd and 3rd arrays
-	char f4[100] = "ie clara 11";
-	strsplit(f4, WHITESPACE, args, &numOfArgs) ;
-	ret = IsEnrolled(args) ;
-	if (ret != 0)
-	{
-		cprintf("[EVAL] #7 DeleteAccount: Failed\n");
-		return 1;
-	}
-	char f5[100] = "gnc Ramy";
-	strsplit(f5, WHITESPACE, args, &numOfArgs) ;
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 7)
-	{
-		cprintf("[EVAL] #8 DeleteAccount: Failed\n");
-		return 1;
-	}
-	char f6[100] = "ie Ramy 2";
-	strsplit(f6, WHITESPACE, args, &numOfArgs) ;
-	ret = IsEnrolled(args) ;
-	if (ret != 1)
-	{
-		cprintf("[EVAL] #9 DeleteAccount: Failed\n");
-		return 1;
-	}
-	char f7[100] = "gnc Lina";
-
-	strsplit(f7, WHITESPACE, args, &numOfArgs) ;
-
-	ret = GetNumberOfCourses(args) ;
-	if (ret != 4)
-	{
-		cprintf("[EVAL] #10 DeleteAccount: Failed\n");
-		return 1;
-	}
-
-	char f8[100] = "ie Lina 50";
-	strsplit(f8, WHITESPACE, args, &numOfArgs) ;
-	ret = IsEnrolled(args) ;
-	if (ret != 1)
-	{
-		cprintf("[EVAL] #11 DeleteAccount: Failed\n");
-		return 1;
-	}
-	char f9[100] = "ie Lina 62";
-	strsplit(f9, WHITESPACE, args, &numOfArgs) ;
-	ret = IsEnrolled(args) ;
-	if (ret != 0)
-	{
-		cprintf("[EVAL] #12 DeleteAccount: Failed\n");
-		return 1;
-	}
-	cprintf("[EVAL][BONUS] DeleteAccount: Succeeded\n");
-
-	return retValue;
+	uint32 *ptr_table = NULL;
+	uint32 mask = 1<<bn;
+	get_page_table(ptr_page_directory, (void*)va, 0, &ptr_table);
+	if (ptr_table == NULL) return -1;
+	return (ptr_table[PTX(va)] & mask) == mask ? 1 : 0 ;
 }
 
-//========================================================
-int CheckArrays(int *expectedArr, int *actualArr, int N)
+void ClearUserSpace()
 {
-	int equal = 1 ;
-//	cprintf("ActualArray : ");
-//	for(int i=0;i<N;i++){
-//		cprintf("%d , ",actualArr[i]);
-//	}
-//	cprintf("\n");
-	for(int i = 0; i < N; i++)
-	{
-		//cprintf(" %d:%d \n",expectedArr[i],actualArr[i]);
-		if(expectedArr[i] != actualArr[i])
-			return 0;
+	for (int i = 0; i < PDX(USER_TOP); ++i) {
+		ptr_page_directory[i] = 0;
 	}
-	return equal;
 }
 
+int CheckFrameNumbersInRange(uint32 ptr1, uint32 ptr2, uint32 size)
+{
+	uint32 totalNumberOfPages = (size*1024*1024)/PAGE_SIZE;
+	void* ptrTemp1 = (void*)ptr1;
+	void* ptrTemp2 = (void*)ptr2;
+
+	for(int i = 0;i<totalNumberOfPages;i++)
+	{
+		uint32* ptr_table1;
+		uint32* ptr_table2;
+
+		get_page_table(ptr_page_directory, ptrTemp1, 0, &ptr_table1);
+		get_page_table(ptr_page_directory, ptrTemp2, 0, &ptr_table2);
+		if (ptr_table1 == NULL)
+		{
+			cprintf("[EVAL] #1 ShareRangeWithPermissions: Failed. Table of address 1 = NULL\n");
+			return -1;
+		}
+		if (ptr_table2 == NULL)
+		{
+			cprintf("[EVAL] #1 ShareRangeWithPermissions: Failed. Table of address 2 = NULL\n");
+			return -1;
+		}
+		if(ptr_table1[PTX(ptrTemp1)] >> 12 != ptr_table2[PTX(ptrTemp2)] >> 12)
+		{
+			cprintf("[EVAL] #1 ShareRangeWithPermissions: Failed. Frame numbers not equal in the whole range\n");
+			return -1;
+		}
+		ptrTemp1 += PAGE_SIZE;
+		ptrTemp2 += PAGE_SIZE;
+	}
+
+	return 0;
+}

@@ -83,20 +83,23 @@ struct Command commands[] =
 		{ "ver", "Print the FOS version" ,command_ver},//don't need arguments
 		{ "add", "Add two integers" ,command_add},//need arguments
 
-		//Assignment2 commands
+		//helper commands
+		//===============
+		{ "cvp", "Connect virtual address to physical address", command_cvp},
+		{ "dvp", "DisConnect virtual address from its physical one", command_dvp},
+
+		//Assignment3 commands
 		//====================
-		{"csa", "Creat account for a student with the given student name, gpa and list of courses", command_csa},
-		{"gnc", "Get number of courses a student enrolled in", command_gnc},
-		{"scs", "Switch courses between two students", command_scs},
-		{"ie", "Check whether the student is enrooled in the given course or not", command_ie},
-		//Assignment2.BONUS command
+		{ "fpa", "Find the EXACT pa correspond to the given va", command_fpa},
+		{ "srp", "Share 2 virtual ranges with the given permission", command_srp},
+		{ "fv", "Find virtual address of the given frame number", command_fv},
+
+		//Assignment3.BONUS command
 		//=========================
-		{ "dnia", "Delete named account and shift down all above accounts (if any)", command_dnia},
+		{ "cpf", "Connect page number to frame number with permissions", command_cpf},
 
 		//TODO: LAB2 Hands-on: add the commands here
-		{"print","fds",command_print_student_data},
-		{"print_index","fdf",command_print_with_index},
-		{"print_all","fsdf",command_print_all_students},
+
 
 		//LAB4: Hands-on
 		{ "sm", "Lab4.HandsOn: display the mapping info for the given virtual address", command_show_mapping},
@@ -127,12 +130,11 @@ int firstTime = 1;
 //invoke the command prompt
 void run_command_prompt()
 {
-	//----------------------------------------------------Main Function -----------------------
 	//CAUTION: DON'T CHANGE OR COMMENT THESE LINE======
 	if (firstTime)
 	{
 		firstTime = 0;
-		TestAssignment2();
+		TestAssignment3();
 	}
 	else
 	{
@@ -187,9 +189,6 @@ int execute_command(char *command_string)
 
 	if(command_found)
 	{
-		cprintf("\n************************************\n");
-		cprintf("Command : %s\n",command_string);
-		cprintf("\n************************************\n");
 		int return_value;
 		return_value = commands[i].function_to_execute(number_of_arguments, arguments);
 		return return_value;
@@ -414,329 +413,260 @@ int command_ft(int number_of_arguments, char **arguments)
 
 	return 0;
 }
+
+//===========================================================================
+//Helper Commands
+//===============
+/*DON'T change this function*/
+int command_cvp(int number_of_arguments, char **arguments)
+{
+	uint32 va = strtol(arguments[1], NULL, 16);
+	uint32 pa = strtol(arguments[2], NULL, 16);
+	map_frame(ptr_page_directory, to_frame_info(pa), (void*)va, 3);
+	return 0;
+}
+
+/*DON'T change this function*/
+int command_dvp(int number_of_arguments, char **arguments)
+{
+	uint32 va = strtol(arguments[1], NULL, 16);
+	uint32 *ptr_table;
+	get_page_table(ptr_page_directory, (void*) va, 0, &ptr_table);
+	if (ptr_table!=NULL)
+		ptr_table[PTX(va)] &= ~PERM_PRESENT;
+
+	return 0;
+}
+
 /****************************************************************/
 
 //========================================================
-/*ASSIGNMENT-2 [MAIN QUESTIONS] */
-struct Students{
-	char name[20];
-	int nameLength;
-	int gpa;
-	int*addressOfFirstCourse;	// I store address of first course only then Iterate over it with courseCounter
-	int numberOfCourses;
-};
+/*ASSIGNMENT-3 [MAIN QUESTIONS] */
 //========================================================
-//Q1:Create Student Account [1.5 MARKS]
-//======================================
+//...................................................
+
+//=========================================Helpers Function to me=========================================
+bool isPresentPageTable(uint32 * pageTableVa){
+	return pageTableVa !=NULL;
+}
+void setWritePremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] |= PERM_WRITEABLE;
+}
+void setReadPremission(uint32 * pageTable, int pageTableIndex){
+	pageTable[pageTableIndex] &= ~PERM_WRITEABLE;
+}
+void setPremission(char premission,uint32 * pageTable,int pageTableIndex){
+	if(premission =='w'){
+		setWritePremission(pageTable,pageTableIndex);
+	}
+	else{
+		setReadPremission(pageTable,pageTableIndex);
+	}
+}
+int getDirectoryIndex(uint32 virtualAddress){
+	return PDX(virtualAddress);
+}
+int getPageTableIndex(uint32 virtualAddress){
+	return PTX(virtualAddress);
+}
+uint32* getPageTableVA(const void *virtual_address, int write){
+	uint32* pageTableVirtualAddress=NULL;
+	get_page_table(ptr_page_directory, virtual_address,write,&pageTableVirtualAddress);
+	return pageTableVirtualAddress;
+}
+int getpageFrameNumber(uint32 virutalAddress ){
+	uint32* pageTableVA=getPageTableVA((void*)virutalAddress,0);
+	if(isPresentPageTable(pageTableVA)){
+		uint32 pageEntry=pageTableVA[getPageTableIndex(virutalAddress)];
+		if((pageEntry & PERM_PRESENT)){
+			int pageFrameNumber=pageEntry>>12;
+			return pageFrameNumber;
+		}
+	}
+	return -1;
+}
+int getPhysicalAddress(int virtualAddress){
+	int pageFrameNumber=getpageFrameNumber(virtualAddress);
+	if(pageFrameNumber!=-1){
+		int offset=virtualAddress&(0xFFF);
+		return pageFrameNumber*PAGE_SIZE+offset;
+	}
+	return -1;
+}
+bool isTrueVA(uint32 address,int pageFrameNumber){
+	return getpageFrameNumber(address)==pageFrameNumber;
+}
+//=========================================End of helper Functions=========================================
+
+//Q1:Find EXACT Physical Address
+//=========================================
 /*DON'T change this function*/
-int command_csa(int number_of_arguments, char **arguments )
+int command_fpa(int number_of_arguments, char **arguments )
 {
-	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE CreateAccount() FUNCTION
-	int *s_va = CreateAccount(number_of_arguments, arguments);
+	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE FindPhysicalAddress() FUNCTION
+	int ret = FindPhysicalAddress(arguments);
+	if (ret == -1)
+		cprintf("pa not exists!");
+	else
+		cprintf("pa = %u\n", (uint32)ret);
 	return 0;
 }
 /*---------------------------------------------------------*/
 
 /*FILL this function
- * arguments[1]: student name
- * arguments[2]: student gpa
- * arguments[3...(K+3)]: k courses that the student enrolled in
+ * arguments[1]: virtual address of the page in HEXADECIMAL
  * Return:
- * 		Start address of the FIRST COURSE in the created array
- *
- * Example:
- * 	FOS> csa   Ali  4  1  2  3
- * 				^
- * 				|
- * arguments	[1]	[2]	[3]	...
- * Create account named "Ali", with gpa 1.4 and 3 courses: 1, 2, 3
- * It should return the start address of the FIRST COURSE in the created array
+ * 	If the page exists, return the EXACT physical address (i.e. including the offset).
+ * 	Else, return -1
  */
-#define MaxStudents 30
-#define MaxCourses 50
-struct  Students studentArray[MaxStudents+1];
-
-int numberOfStudents=0; //this variable used to be index in studentArray , as index iterating over array
-int *coursePointer=(int*)0xF1000000;	//this pointer that point to all courses of all students
-
-int getIndexOfStudent(char *studentName){
-	bool isMatching;
-	for(int i=0;i<numberOfStudents;i++){
-	    isMatching=1;
-		for(int j=0;j<studentArray[i].nameLength;j++){
-			if(studentName[j]!=studentArray[i].name[j]){
-				isMatching=0;
-				break;
-			}
-		}
-		if(isMatching)
-			return i;	//this is student index in the array
-	}
-	return -1;	//the student name is not found
-}
-
-bool canCreateAccount(){
-	return numberOfStudents < MaxStudents;
-}
-int* CreateAccount(int numOfArgs, char** arguments)
+int FindPhysicalAddress(char** arguments)
 {
-	//TODO: Assignment2.Q1
+	//TODO: Assignment3.Q1
 	//put your logic here
-	//...
-	if(canCreateAccount()){
-		//store first address of first course
-		studentArray[numberOfStudents].addressOfFirstCourse=coursePointer;
-		//store the name length
-		studentArray[numberOfStudents].nameLength=strlen(arguments[1]);
-
-		//store the name
-		for(int i=0;i<studentArray[numberOfStudents].nameLength;i++){
-			studentArray[numberOfStudents].name[i]=arguments[1][i];
-		}
-		//store the GPA
-		studentArray[numberOfStudents].gpa=strtol(arguments[2],NULL,10);
-		//store the courses counter
-		int numOfCourses=numOfArgs-3;
-		if(numOfCourses > 50){
-			cprintf("Sorry, The maximum number of courses is 50\n");
-			return NULL;
-		}
-		studentArray[numberOfStudents].numberOfCourses=numOfCourses;
-
-		//store the courses
-		for(int i=3;i<numOfArgs;i++){
-			int courseNumber=strtol(arguments[i],NULL,10);
-			*coursePointer=courseNumber;
-			coursePointer++;
-		}
-		return studentArray[numberOfStudents++].addressOfFirstCourse;
-	}
-	else {
-		cprintf("Sorry, you have exceeded the Maximum limit of students\n");
-		return NULL;
-	}
-
+	int virtualAddress=strtol(arguments[1],NULL,16);
+	return getPhysicalAddress(virtualAddress);
 }
+
 //========================================================
 
-//Q2:Get Number of Courses [1.5 MARKS]
-//=============================
+//Q2:Share Range with Permissions
+//========================================
+
 /*DON'T change this function*/
-int command_gnc(int number_of_arguments, char **arguments )
+int command_srp(int number_of_arguments, char **arguments )
 {
-	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE GetNumberOfCourses() FUNCTION
-	int numOfCourses = GetNumberOfCourses(arguments) ;
+	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE ShareRangeWithPermissions() FUNCTION
+	ShareRangeWithPermissions(arguments) ;
 	return 0;
 }
 /*---------------------------------------------------------*/
 
 /*FILL this function
- * arguments[1]: student name
+ * arguments[1]: start virtual address of the range to be shared (in HEX)
+ * arguments[2]: start virtual address of the second range (in HEX)
+ * arguments[3]: size of the sharing range (in MB)
+ * arguments[4]: <r/w>: 'r' for read-only permission, 'w' for read/write permission
+ */
+void ShareRangeWithPermissions(char** arguments)
+{
+	uint32 VA1=strtol(arguments[1],NULL,16);
+	uint32 VA2=strtol(arguments[2],NULL,16);
+	int size=strtol(arguments[3],NULL,10);
+	char premission=arguments[4][0];
+	int pagesRange =(size*1024)/4 + ( size%4==0 ? 0:1 );
+	uint32 * pageTable1Va=getPageTableVA((void*)VA1,0);
+	uint32 * pageTable2Va=getPageTableVA((void*)VA2,1);
+
+	if(isPresentPageTable(pageTable1Va) && isPresentPageTable(pageTable2Va)){
+		uint32 * pageTable1;
+		uint32 * pageTable2;
+		while(pagesRange--){
+			pageTable1=getPageTableVA((void*)VA1,0);
+			pageTable2=getPageTableVA((void*)VA2,1);
+			pageTable2[getPageTableIndex(VA2)]=pageTable1[getPageTableIndex(VA1)];
+			setPremission(premission,pageTable2,getPageTableIndex(VA2));
+			VA1+=PAGE_SIZE ;
+			VA2+=PAGE_SIZE;
+		}
+	}
+}
+
+//========================================================
+
+//Q3: Find virtual address of the given frame number
+//=============================================================
+
+/*DON'T change this function*/
+int command_fv(int number_of_arguments, char **arguments )
+{
+	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE FindVirtualOfFrameNum() FUNCTION
+	int ret = FindVirtualOfFrameNum(arguments) ;
+	if (ret == -1)
+	{
+		cprintf("not exists!\n");
+	}
+	else
+	{
+		cprintf("va of the first page that's connected frame #%s = %x\n", arguments[1], ret);
+	}
+	return 0;
+}
+/*---------------------------------------------------------*/
+
+/*FILL this function
+ * arguments[1]: frame number
  * Return:
- * 		The number of courses that the student is enrolled in.
+ * 	If there's one or more pages connected to the given frame number, return the virtual address of the FIRST one.
+ * 	Else, return -1.
  */
-int GetNumberOfCourses(char** arguments)
-{
-	//TODO: Assignment2.Q2
-	//put your logic here
-	//...
-	return studentArray[getIndexOfStudent(arguments[1])].numberOfCourses;
+
+const int maxSize=4*1024*1024;
+int get_VA_of_frame_number(int pageFrameNumber){
+	int virutalAddress=0;
+	int itrations=maxSize;
+	while(itrations--){
+		if(isTrueVA(virutalAddress,pageFrameNumber)){
+			cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
+			return virutalAddress;
+		}
+		else virutalAddress+=4096;
+	}
+	cprintf("frame: %d is not Found\n",pageFrameNumber);
+	return -1;
 }
+int FindVirtualOfFrameNum(char** arguments)
+{
+	//TODO: Assignment3.Q3
+	int pageFrameNumber=strtol(arguments[1],NULL,10);
+	return get_VA_of_frame_number(pageFrameNumber);
+}
+
+
+
 //========================================================
 
-//Q3:Copy courses from One account to Another [1.5 MARKS]
-//======================================================
+
+//========================================================
+
+//========================================================
+/*ASSIGNMENT-3 [BONUS QUESTION] */
+//========================================================
+
+//BONUS: Connect page number to frame number with permissions
+//======================================================================
+
 /*DON'T change this function*/
-int command_scs(int number_of_arguments, char **arguments )
+int command_cpf(int number_of_arguments, char **arguments )
 {
-	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE SwitchCourses() FUNCTION
-	SwitchCourses(arguments) ;
+	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE ConnectPageToFrame() FUNCTION
+	uint32 tableEntry = ConnectPageToFrame(arguments);
+	cprintf("The table entry after connection = %08x\n", tableEntry);
+
 	return 0;
 }
 /*---------------------------------------------------------*/
 
 /*FILL this function
- * arguments[1]: first student name
- * arguments[2]: second student name
+ * arguments[1]: page number
+ * arguments[2]: frame number
+ * arguments[3]: <r/w>: 'r' for read-only permission, 'w' for read/write permission
+ * arguments[4]: <s/u>: 's' for supervisor permission, 'u' for user permission
+ * Return:
+ * 	page table ENTRY of the given page after applying the connection
  */
-void SwitchCourses(char** arguments)
+uint32 ConnectPageToFrame(char** arguments)
 {
-	//TODO: Assignment2.Q3
+	//TODO: Assignment3.BONUS
 	//put your logic here
 	//...
-	char *firstName=arguments[1];
-	int firstStudentIndex=getIndexOfStudent(firstName);
-	int* addressOfFirstStudentCourses=studentArray[firstStudentIndex].addressOfFirstCourse;
+	int pageNumber = strtol(arguments[1],NULL,10);
+	int frameNumber=strtol(arguments[2],NULL,10);
+	int virtualAddress=get_VA_of_frame_number(frameNumber);
 
-	char *secondName = arguments[2];
-	int secondStudentIndex=getIndexOfStudent(secondName);
-	int *addressOfSecondStudentCourses=studentArray[secondStudentIndex].addressOfFirstCourse;
 
-	int temp;
-	for(int i=0;i<studentArray[firstStudentIndex].numberOfCourses;i++){
-		//swap the courses
-	    temp=addressOfFirstStudentCourses[i];
-		addressOfFirstStudentCourses[i]=addressOfSecondStudentCourses[i];
-		addressOfSecondStudentCourses[i]=temp;
-	}
-}
-//========================================================
 
-//Q4:Is enrolled? [1.5 MARKS]
-//==============================
-/*DON'T change this function*/
-int command_ie(int number_of_arguments, char **arguments )
-{
-	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE IsEnrolled() FUNCTION
-	IsEnrolled(arguments);
+
 	return 0;
 }
-/*---------------------------------------------------------*/
-
-/*FILL this function
- * arguments[1]: array name
- * arguments[2]: order type ("a": ascending,"d": descending)
- */
-bool isCourseEnrolled(int *addressOfCourses,int numberOfCourses,int courseNumberTarget){
-	for(int i=0;i<numberOfCourses;i++){
-		if(*addressOfCourses == courseNumberTarget)
-			return 1;
-		addressOfCourses++;
-	}
-	return 0;
-}
-int IsEnrolled(char** arguments)
-{
-	//Assignment2.Q4
-	//put your logic here
-	//...
-	char *studentName=arguments[1];
-	int studentIndex=getIndexOfStudent(studentName);
-	int courseNumberTarget=strtol(arguments[2],NULL,10);
-	int *addressOfCourses=studentArray[studentIndex].addressOfFirstCourse;
-
-	return isCourseEnrolled(addressOfCourses,studentArray[studentIndex].numberOfCourses,courseNumberTarget);
-}
-//========================================================
-
-//BONUS:Delete Student Account [2 MARKS]
-/*DON'T change this function*/
-int command_dnia(int number_of_arguments, char **arguments )
-{
-	//DON'T WRITE YOUR LOGIC HERE, WRITE INSIDE THE DeleteAccount() FUNCTION
-	DeleteAccount(arguments);
-	return 0;
-}
-/*---------------------------------------------------------*/
-
-/*FILL this function
- * arguments[1]: account name
- * It should delete the previously created <account> from the memory.
- * This is done by moving down all allocated accounts that are located after the deleted one.
- */
-
-void initializeStudent(int studentIndex){
-	studentArray[studentIndex].numberOfCourses=0;
-	studentArray[studentIndex].nameLength=0;
-	coursePointer=(int*)studentArray[studentIndex].addressOfFirstCourse;
-	numberOfStudents--;
-}
-void DeleteAccount(char** arguments)
-{
-	//Assignment2.BONUS
-	//put your logic here
-	//...
-
-	//handle deleting of first element
-	if(numberOfStudents==1){
-		initializeStudent(0);
-		return;
-	}
-	char *studentName=arguments[1];
-	int studentIndex=getIndexOfStudent(studentName);
-
-	//handle deleting of last element
-	if(studentIndex==numberOfStudents-1){
-		initializeStudent(studentIndex);
-		return;
-	}
-
-	//cprintf("Student Index : %d\nAddress : %x\n",studentIndex,studentArray[studentIndex].addressOfFirstCourse);
-	for(int i=studentIndex;i<numberOfStudents-1;i++){
-
-		//Copy courses
-		int* addressOfFirstStudentCourses=studentArray[i].addressOfFirstCourse;
-		int* addressOfSecondStudentCourses=studentArray[i+1].addressOfFirstCourse;
-		studentArray[i].numberOfCourses=studentArray[i+1].numberOfCourses;
-
-		for(int j=0;j<studentArray[i+1].numberOfCourses;j++){
-		    addressOfFirstStudentCourses[j]=addressOfSecondStudentCourses[j];
-		}
-		//Copy Name
-		studentArray[i].nameLength=studentArray[i+1].nameLength;
-		for(int j=0;j<studentArray[i+1].nameLength;j++){
-			studentArray[i].name[j]=studentArray[i+1].name[j];
-		}
-		//copy GPA
-		studentArray[i].gpa=studentArray[i+1].gpa;
-	}
-	numberOfStudents--;
-}
 
 
-// ------------this code is for debugging ---------- //
-int command_print_with_index(int number_of_arguments, char **arguments){
-	int position=strtol(arguments[1],NULL,16);
-
-	cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
-
-	int *address=studentArray[position].addressOfFirstCourse;
-	cprintf("Courses Address is at %x\n",address);
-
-	cprintf("Courses %d : ",studentArray[position].numberOfCourses);
-
-	for(int i=0;i<studentArray[position].numberOfCourses;i++){
-		cprintf(" %d ",*address);
-		address++;
-	}
-	cprintf("\n=================================================\n");
-	return 0;
-}
-int command_print_student_data(int number_of_arguments, char **arguments){
-	cprintf("\n==============================================\n");
-	int position = getIndexOfStudent(arguments[1]);
-	if(position==-1)return 0;
-	cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
-
-	int *address=studentArray[position].addressOfFirstCourse;
-	cprintf("Courses Address is at %x\n",address);
-
-	cprintf("Courses %d : ",studentArray[position].numberOfCourses);
-
-	for(int i=0;i<studentArray[position].numberOfCourses;i++){
-		cprintf(" %d ",*address);
-		address++;
-	}
-	cprintf("\n==============================================\n");
-	return 0;
-}
-int command_print_all_students(){
-	for(int ss=0;ss<numberOfStudents;ss++){
-		cprintf("\n==============================================\n");
-		int position = ss;
-		cprintf("Index : %d\n",ss);
-		cprintf("Name : %s\nGpa: %d\n",studentArray[position].name,studentArray[position].gpa);
-		cprintf("Name Size : %d\n",strlen(studentArray[position].name));
-		int *address=studentArray[position].addressOfFirstCourse;
-		cprintf("Courses Address is at %x\n",address);
-
-		cprintf("Courses %d : ",studentArray[position].numberOfCourses);
-
-		for(int i=0;i<studentArray[position].numberOfCourses;i++){
-			cprintf(" %d ",*address);
-			address++;
-		}
-		cprintf("\n==============================================\n");
-	}
-	return 0;
-}
