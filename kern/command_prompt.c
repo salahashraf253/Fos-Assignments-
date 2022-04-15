@@ -478,6 +478,8 @@ int getpageFrameNumber(uint32 virutalAddress ){
 	uint32* pageTableVA=getPageTableVA((void*)virutalAddress,0);
 	if(isPresentPageTable(pageTableVA)){
 		uint32 pageEntry=pageTableVA[getPageTableIndex(virutalAddress)];
+//		cprintf("Page Entry: %d\n",pageEntry);
+//		cprintf("Page Entry: %x\n",pageEntry);
 		if((pageEntry & PERM_PRESENT)){
 			int pageFrameNumber=pageEntry>>12;
 			return pageFrameNumber;
@@ -606,7 +608,7 @@ int get_VA_of_frame_number(int pageFrameNumber){
 	int itrations=maxSize;
 	while(itrations--){
 		if(isTrueVA(virutalAddress,pageFrameNumber)){
-			cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,address);
+			cprintf("frame: %d is Found at address: %x\n",pageFrameNumber,virutalAddress);
 			return virutalAddress;
 		}
 		else virutalAddress+=4096;
@@ -661,12 +663,34 @@ uint32 ConnectPageToFrame(char** arguments)
 	//...
 	int pageNumber = strtol(arguments[1],NULL,10);
 	int frameNumber=strtol(arguments[2],NULL,10);
-	int virtualAddress=get_VA_of_frame_number(frameNumber);
+	char writePerm=arguments[3][0];
 
+	int entry=pageNumber%1024;
 
+	int directoryIndex=pageNumber/1024;
 
+	int pageIndex=entry<<12;
 
-	return 0;
+	int vaOfPage=(directoryIndex<<22)+pageIndex;	//virtual address
+	uint32 *pageTableVa=getPageTableVA((void*)vaOfPage,1);
+	uint32 result= frameNumber*4096;
+
+	if(arguments[4][0]!='s'){
+		result|=PERM_USER;
+	}
+
+	result |= PERM_PRESENT;
+	result &= ~PERM_MODIFIED;
+	result |= PERM_AVAILABLE;
+
+	if(writePerm=='w'){
+		result |= PERM_WRITEABLE;
+	}
+	else{
+		result &= ~PERM_WRITEABLE;
+	}
+	pageTableVa[getPageTableIndex(vaOfPage)]=result;
+	return result;
 }
 
 

@@ -17,7 +17,7 @@ void TestAssignment3()
 	cprintf("\n========================\n");
 	cprintf("Automatic Testing of Q3:\n");
 	cprintf("========================\n");
-//	TestAss3Q3();
+	TestAss3Q3();
 	cprintf("\n===========================\n");
 	cprintf("Automatic Testing of BONUS:\n");
 	cprintf("===========================\n");
